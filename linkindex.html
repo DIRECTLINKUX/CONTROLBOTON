@@ -5,62 +5,82 @@
 <title>Control de Apertura</title>
 <style>
   body {
-    font-family: Arial, sans-serif; 
-    background: #f0f0f0; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin: 0;
-    padding: 10px;
+    padding: 0;
+    height: 100vh;
   }
+
   .cuadro {
     background: white;
-    padding: 2em;
+    padding: 2rem;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0,0,0,0.3);
     text-align: center;
-    max-width: 500px;
-    width: 100%;
-    font-size: 1em; /* tamaño base relativo */
+    width: 90%;
+    max-width: 450px;
   }
+
   h2 {
-    margin-bottom: 0.5em;
-    font-size: 2em;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
   }
+
   #apartamento {
-    margin-bottom: 1em;
-    font-size: 1.5em;
+    font-size: 1.3rem;
     font-weight: bold;
+    margin-bottom: 1rem;
   }
+
   p {
-    margin: 0.75em 0;
+    font-size: 1.1rem;
+    margin: 0.5rem 0;
   }
+
   button {
-    font-size: 1em;
-    padding: 0.75em 1.5em;
-    margin: 0.5em;
+    width: 70%;
+    font-size: 1.2rem;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s; /* transición suave al presionar */
+    box-shadow: 0 4px #999;
   }
+
+  button:active {
+    transform: translateY(2px); /* se mueve un poco hacia abajo al pulsar */
+    box-shadow: 0 2px #666;     /* sombra más pequeña */
+  }
+
   #abrir { background: #28a745; color: white; }
   #apagar { background: #dc3545; color: white; }
-  #mensaje { color: red; margin-top: 1em; font-size: 1em; }
 
-  /* Botones deshabilitados en gris */
   button:disabled {
     background: #aaa !important;
     color: #666 !important;
     cursor: not-allowed;
+    box-shadow: none; /* quitar sombra cuando está deshabilitado */
   }
 
-  /* Ajustes para móviles */
-  @media (max-width: 600px) {
-    .cuadro { padding: 1.5em; font-size: 1.2em; }
-    h2 { font-size: 2em; }
-    #apartamento { font-size: 1.5em; }
-    button { font-size: 1.2em; padding: 0.8em 2em; }
+  #mensaje {
+    font-size: 1.1rem;
+    color: red;
+    margin-top: 1rem;
+  }
+
+  /* Ajustes para móviles pequeños */
+  @media (max-width: 400px) {
+    .cuadro { padding: 1.5rem; }
+    h2 { font-size: 1.8rem; }
+    #apartamento { font-size: 1.2rem; }
+    p { font-size: 1rem; }
+    button { font-size: 1.1rem; padding: 0.7rem; width: 80%; }
   }
 </style>
 </head>
@@ -143,4 +163,4 @@
 </script>
 
 </body>
-</html> 
+</html>
