@@ -6,31 +6,28 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    background: #f0f0f0;
+    background: linear-gradient(to bottom, #e0e0e0, #cfcfcf);
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 0;
-    padding: 0;
     height: 100vh;
   }
 
   .cuadro {
     background: white;
     padding: 3rem;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
     text-align: center;
     width: 98%;
-    max-width: 650px; /* más ancho para abarcar ambos botones */
+    max-width: 750px;
   }
 
   h2 {
     font-size: 4rem;
     margin-bottom: 1rem;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   #apartamento {
@@ -41,47 +38,59 @@
 
   .fecha-hora {
     font-size: 2.8rem;
-    margin: 0 0 2rem 0;
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
+    margin-bottom: 2rem;
   }
 
   .botones {
     display: flex;
     justify-content: center;
-    gap: 2rem; /* 2cm separación entre botones */
-    margin-top: 2rem;
-    flex-wrap: wrap;
+    gap: 2cm;
+    margin-top: 2cm;
   }
 
   button {
-    width: 200px; /* tamaño fijo de cada botón */
+    width: 280px;
+    padding: 2.5rem 1rem;
     font-size: 2.8rem;
-    padding: 4rem 1rem; /* altura grande */
+    border-radius: 15px;
     border: none;
-    border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
-    box-shadow: 0 4px #999;
+    font-weight: bold;
+    transition: all 0.15s ease;
+    transform: translateY(0);
   }
 
-  button:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px #666;
-    background-color: #6c757d !important;
+  /* BOTÓN VERDE 3D */
+  #abrir {
+    background: linear-gradient(to bottom, #34d058, #28a745);
     color: white;
+    box-shadow:
+      0 8px 0 #1e7e34,
+      0 12px 20px rgba(0,0,0,0.3);
   }
 
-  #abrir { background: #28a745; color: white; }
-  #apagar { background: #dc3545; color: white; }
+  /* BOTÓN ROJO 3D */
+  #apagar {
+    background: linear-gradient(to bottom, #ff5f5f, #dc3545);
+    color: white;
+    box-shadow:
+      0 8px 0 #a71d2a,
+      0 12px 20px rgba(0,0,0,0.3);
+  }
+
+  /* EFECTO AL PULSAR (SE HUNDE) */
+  button:active {
+    transform: translateY(6px);
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.4),
+      0 6px 12px rgba(0,0,0,0.3);
+  }
 
   button:disabled {
     background: #aaa !important;
     color: #666 !important;
-    cursor: not-allowed;
     box-shadow: none;
+    cursor: not-allowed;
   }
 
   #mensaje {
@@ -92,11 +101,14 @@
 
   @media (max-width: 700px) {
     .cuadro { width: 95%; }
-    button { width: 45%; padding: 3rem 0.5rem; font-size: 2.2rem; }
+    button {
+      width: 45%;
+      font-size: 2.2rem;
+      padding: 2rem 0.5rem;
+    }
     h2 { font-size: 3rem; }
-    #apartamento { font-size: 2.5rem; margin-bottom: 1.5rem; }
-    .fecha-hora { font-size: 2rem; gap: 0.5rem; }
-    #mensaje { font-size: 2rem; }
+    #apartamento { font-size: 2.5rem; }
+    .fecha-hora { font-size: 2rem; }
   }
 </style>
 </head>
@@ -107,12 +119,11 @@
   <p id="apartamento"></p>
 
   <div class="fecha-hora">
-    <span>Inicio: <span id="fechaInicio"></span></span>
-    <span><span id="horaInicio"></span></span>
+    Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span>
   </div>
+
   <div class="fecha-hora">
-    <span>Fin: <span id="fechaFin"></span></span>
-    <span><span id="horaFin"></span></span>
+    Fin: <span id="fechaFin"></span> <span id="horaFin"></span>
   </div>
   
   <div class="botones">
@@ -184,14 +195,10 @@
   setInterval(validarAcceso, 60000);
 
   btnAbrir.onclick = () => {
-    btnAbrir.style.backgroundColor = '#218838';
-    setTimeout(()=> btnAbrir.style.backgroundColor = '#28a745', 150);
     fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
   };
 
   btnApagar.onclick = () => {
-    btnApagar.style.backgroundColor = '#c82333';
-    setTimeout(()=> btnApagar.style.backgroundColor = '#dc3545', 150);
     fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
   };
 </script>
