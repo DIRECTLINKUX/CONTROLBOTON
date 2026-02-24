@@ -21,29 +21,36 @@
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     text-align: center;
-    width: 90%;
-    max-width: 450px;
+    width: 95%;
+    max-width: 500px; /* máximo ancho para que quepa en móviles */
   }
 
   h2 {
-    font-size: 5rem; /* doble tamaño */
+    font-size: 4rem; /* título un poco más pequeño para caber en línea en móviles */
     margin-bottom: 1rem;
+    white-space: nowrap; /* evita salto de línea */
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   #apartamento {
-    font-size: 3.6rem; /* doble tamaño */
+    font-size: 3.6rem;
     font-weight: bold;
     margin-bottom: 2rem; /* separación 2cm */
   }
 
-  p {
-    font-size: 2.8rem; /* doble tamaño */
-    margin: 0.5rem 0 2rem 0; /* separación 2cm */
+  .fecha-hora {
+    font-size: 2.8rem;
+    margin: 0 0 2rem 0;
+    display: flex;
+    justify-content: center;
+    gap: 1rem; /* espacio entre fecha y hora */
+    flex-wrap: wrap; /* si no cabe en móvil se ajusta */
   }
 
   button {
     width: 70%;
-    font-size: 2.8rem; /* doble tamaño */
+    font-size: 2.8rem;
     padding: 4rem 1rem; /* doble altura */
     margin: 20px 0; /* 2cm separación entre botones */
     border: none;
@@ -56,7 +63,7 @@
   button:active {
     transform: translateY(2px);
     box-shadow: 0 2px #666;
-    background-color: #6c757d !important; /* flash temporal */
+    background-color: #6c757d !important;
     color: white;
   }
 
@@ -71,18 +78,19 @@
   }
 
   #mensaje {
-    font-size: 2.6rem; /* doble tamaño */
+    font-size: 2.6rem;
     color: red;
     margin-top: 1rem;
   }
 
   /* Ajustes para móviles pequeños */
   @media (max-width: 400px) {
-    .cuadro { padding: 2.5rem; }
-    h2 { font-size: 4rem; }
-    #apartamento { font-size: 3rem; margin-bottom: 1.5rem; }
-    p { font-size: 2.4rem; margin-bottom: 1.5rem; }
-    button { font-size: 2.4rem; padding: 3.5rem 1rem; width: 80%; margin: 16px 0; }
+    .cuadro { padding: 2rem; width: 98%; }
+    h2 { font-size: 3rem; }
+    #apartamento { font-size: 2.5rem; margin-bottom: 1.5rem; }
+    .fecha-hora { font-size: 2rem; gap: 0.5rem; }
+    button { font-size: 2.2rem; padding: 3rem 0.8rem; width: 90%; margin: 16px 0; }
+    #mensaje { font-size: 2rem; }
   }
 </style>
 </head>
@@ -91,8 +99,15 @@
 <div class="cuadro">
   <h2>Control de Apertura</h2>
   <p id="apartamento"></p>
-  <p>Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span></p>
-  <p>Fin: <span id="fechaFin"></span> <span id="horaFin"></span></p>
+
+  <div class="fecha-hora">
+    <span>Inicio: <span id="fechaInicio"></span></span>
+    <span><span id="horaInicio"></span></span>
+  </div>
+  <div class="fecha-hora">
+    <span>Fin: <span id="fechaFin"></span></span>
+    <span><span id="horaFin"></span></span>
+  </div>
   
   <button id="abrir">Abrir</button>
   <button id="apagar">Cerrar</button>
@@ -161,13 +176,13 @@
   setInterval(validarAcceso, 60000);
 
   btnAbrir.onclick = () => {
-    btnAbrir.style.backgroundColor = '#218838'; // flash breve
+    btnAbrir.style.backgroundColor = '#218838';
     setTimeout(()=> btnAbrir.style.backgroundColor = '#28a745', 150);
     fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
   };
 
   btnApagar.onclick = () => {
-    btnApagar.style.backgroundColor = '#c82333'; // flash breve
+    btnApagar.style.backgroundColor = '#c82333';
     setTimeout(()=> btnApagar.style.backgroundColor = '#dc3545', 150);
     fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
   };
