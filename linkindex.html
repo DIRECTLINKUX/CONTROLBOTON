@@ -12,6 +12,7 @@
     align-items: center; 
     height: 100vh; 
     margin: 0;
+    zoom: 2; /* Escala todo al doble */
   }
   .cuadro {
     background: white;
@@ -22,11 +23,11 @@
     max-width: 400px;
     width: 90%;
   }
-  h2 { margin-bottom: 20px; }
-  p { margin: 10px 0; font-size: 18px; }
+  h2 { margin-bottom: 10px; font-size: 2em; }
+  p { margin: 10px 0; font-size: 1.5em; }
   button {
-    font-size: 18px; 
-    padding: 10px 25px; 
+    font-size: 1.5em; 
+    padding: 15px 35px; 
     margin: 10px; 
     border: none; 
     border-radius: 5px; 
@@ -34,7 +35,7 @@
   }
   #abrir { background: #28a745; color: white; }
   #apagar { background: #dc3545; color: white; }
-  #mensaje { font-size: 18px; color: red; margin-top: 20px; }
+  #mensaje { font-size: 1.5em; color: red; margin-top: 20px; }
 
   /* Botones deshabilitados en gris */
   button:disabled {
@@ -48,6 +49,7 @@
 
 <div class="cuadro">
   <h2>Control de Apertura</h2>
+  <p id="apartamento"></p>
   <p>Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span></p>
   <p>Fin: <span id="fechaFin"></span> <span id="horaFin"></span></p>
   
@@ -88,6 +90,7 @@
   const inicio = formatearFechaHora(f1,h1);
   const fin = formatearFechaHora(f2,h2);
 
+  document.getElementById('apartamento').textContent = `Apartamento ${a}`;
   document.getElementById('fechaInicio').textContent = inicio.fecha;
   document.getElementById('horaInicio').textContent = inicio.hora;
   document.getElementById('fechaFin').textContent = fin.fecha;
