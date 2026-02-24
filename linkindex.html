@@ -35,6 +35,13 @@
   #abrir { background: #28a745; color: white; }
   #apagar { background: #dc3545; color: white; }
   #mensaje { font-size: 18px; color: red; margin-top: 20px; }
+
+  /* Botones deshabilitados en gris */
+  button:disabled {
+    background: #aaa !important;
+    color: #666 !important;
+    cursor: not-allowed;
+  }
 </style>
 </head>
 <body>
@@ -56,7 +63,6 @@
   const h1 = params.get('h1'); 
   const f2 = params.get('f2'); 
   const h2 = params.get('h2'); 
-  const k  = params.get('k');  
   const a  = Math.min(Math.max(parseInt(params.get('a')),1),10) || 1;
 
   const luces = {
@@ -73,8 +79,10 @@
   };
 
   function formatearFechaHora(f, h){
-    return { fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
-             hora: h.slice(0,2)+':'+h.slice(2,4) };
+    return { 
+      fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
+      hora: h.slice(0,2)+':'+h.slice(2,4)
+    };
   }
 
   const inicio = formatearFechaHora(f1,h1);
@@ -89,32 +97,19 @@
   const btnApagar = document.getElementById('apagar');
   const mensaje = document.getElementById('mensaje');
 
-  async function generarClave(fi, hi, ff, hf){
-    const str = fi+hi+ff+hf;
-    const msgUint8 = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2,'0')).join('').slice(0,10);
-  }
-
-  async function validarAcceso(){
-    const claveGenerada = await generarClave(f1,h1,f2,h2);
+  function validarAcceso(){
     const ahora = new Date();
     const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
     const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
 
-    if(k !== claveGenerada){
-      btnAbrir.disabled = true;
-      btnApagar.disabled = true;
-      mensaje.textContent = 'Link inválido';
-    } else if(ahora < fIni || ahora > fFin){
-      btnAbrir.disabled = true;
-      btnApagar.disabled = true;
-      mensaje.textContent = 'Fuera de fechas u horario';
-    } else {
+    if(ahora >= fIni && ahora <= fFin){
       btnAbrir.disabled = false;
       btnApagar.disabled = false;
       mensaje.textContent = '';
+    } else {
+      btnAbrir.disabled = true;
+      btnApagar.disabled = true;
+      mensaje.textContent = 'Fuera de fechas u horario';
     }
   }
 
