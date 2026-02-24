@@ -21,14 +21,14 @@
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     text-align: center;
-    width: 95%;
-    max-width: 500px; /* máximo ancho para que quepa en móviles */
+    width: 98%;
+    max-width: 650px; /* más ancho para abarcar ambos botones */
   }
 
   h2 {
-    font-size: 4rem; /* título un poco más pequeño para caber en línea en móviles */
+    font-size: 4rem;
     margin-bottom: 1rem;
-    white-space: nowrap; /* evita salto de línea */
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -36,7 +36,7 @@
   #apartamento {
     font-size: 3.6rem;
     font-weight: bold;
-    margin-bottom: 2rem; /* separación 2cm */
+    margin-bottom: 2rem;
   }
 
   .fecha-hora {
@@ -44,15 +44,22 @@
     margin: 0 0 2rem 0;
     display: flex;
     justify-content: center;
-    gap: 1rem; /* espacio entre fecha y hora */
-    flex-wrap: wrap; /* si no cabe en móvil se ajusta */
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .botones {
+    display: flex;
+    justify-content: center;
+    gap: 2rem; /* 2cm separación entre botones */
+    margin-top: 2rem;
+    flex-wrap: wrap;
   }
 
   button {
-    width: 70%;
+    width: 200px; /* tamaño fijo de cada botón */
     font-size: 2.8rem;
-    padding: 4rem 1rem; /* doble altura */
-    margin: 20px 0; /* 2cm separación entre botones */
+    padding: 4rem 1rem; /* altura grande */
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -83,13 +90,12 @@
     margin-top: 1rem;
   }
 
-  /* Ajustes para móviles pequeños */
-  @media (max-width: 400px) {
-    .cuadro { padding: 2rem; width: 98%; }
+  @media (max-width: 700px) {
+    .cuadro { width: 95%; }
+    button { width: 45%; padding: 3rem 0.5rem; font-size: 2.2rem; }
     h2 { font-size: 3rem; }
     #apartamento { font-size: 2.5rem; margin-bottom: 1.5rem; }
     .fecha-hora { font-size: 2rem; gap: 0.5rem; }
-    button { font-size: 2.2rem; padding: 3rem 0.8rem; width: 90%; margin: 16px 0; }
     #mensaje { font-size: 2rem; }
   }
 </style>
@@ -109,8 +115,10 @@
     <span><span id="horaFin"></span></span>
   </div>
   
-  <button id="abrir">Abrir</button>
-  <button id="apagar">Cerrar</button>
+  <div class="botones">
+    <button id="abrir">Abrir</button>
+    <button id="apagar">Cerrar</button>
+  </div>
 
   <p id="mensaje"></p>
 </div>
