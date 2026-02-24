@@ -17,7 +17,7 @@
 
   .cuadro {
     background: white;
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0,0,0,0.3);
     text-align: center;
@@ -26,36 +26,38 @@
   }
 
   h2 {
-    font-size: 2rem;
+    font-size: 2.5rem;
     margin-bottom: 0.5rem;
   }
 
   #apartamento {
-    font-size: 1.3rem;
+    font-size: 1.8rem;
     font-weight: bold;
     margin-bottom: 1rem;
   }
 
   p {
-    font-size: 1.1rem;
-    margin: 0.5rem 0;
+    font-size: 1.4rem;
+    margin: 0.5rem 0 1rem 0; /* margen inferior mayor para separar botones */
   }
 
   button {
     width: 70%;
-    font-size: 1.2rem;
-    padding: 0.8rem;
-    margin: 0.5rem 0;
+    font-size: 1.4rem;
+    padding: 1rem;
+    margin: 10px 0; /* separación entre botones */
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.1s; /* transición suave al presionar */
+    transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
     box-shadow: 0 4px #999;
   }
 
   button:active {
-    transform: translateY(2px); /* se mueve un poco hacia abajo al pulsar */
-    box-shadow: 0 2px #666;     /* sombra más pequeña */
+    transform: translateY(2px);
+    box-shadow: 0 2px #666;
+    background-color: #6c757d !important; /* flash temporal al pulsar */
+    color: white;
   }
 
   #abrir { background: #28a745; color: white; }
@@ -65,22 +67,22 @@
     background: #aaa !important;
     color: #666 !important;
     cursor: not-allowed;
-    box-shadow: none; /* quitar sombra cuando está deshabilitado */
+    box-shadow: none;
   }
 
   #mensaje {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     color: red;
     margin-top: 1rem;
   }
 
   /* Ajustes para móviles pequeños */
   @media (max-width: 400px) {
-    .cuadro { padding: 1.5rem; }
-    h2 { font-size: 1.8rem; }
-    #apartamento { font-size: 1.2rem; }
-    p { font-size: 1rem; }
-    button { font-size: 1.1rem; padding: 0.7rem; width: 80%; }
+    .cuadro { padding: 1.8rem; }
+    h2 { font-size: 2rem; }
+    #apartamento { font-size: 1.5rem; }
+    p { font-size: 1.2rem; margin-bottom: 0.8rem; }
+    button { font-size: 1.2rem; padding: 0.9rem; width: 80%; margin: 8px 0; }
   }
 </style>
 </head>
@@ -158,8 +160,17 @@
   validarAcceso();
   setInterval(validarAcceso, 60000);
 
-  btnAbrir.onclick = () => fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
-  btnApagar.onclick = () => fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
+  btnAbrir.onclick = () => {
+    btnAbrir.style.backgroundColor = '#218838'; // efecto flash breve
+    setTimeout(()=> btnAbrir.style.backgroundColor = '#28a745', 150);
+    fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
+  };
+
+  btnApagar.onclick = () => {
+    btnApagar.style.backgroundColor = '#c82333';
+    setTimeout(()=> btnApagar.style.backgroundColor = '#dc3545', 150);
+    fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
+  };
 </script>
 
 </body>
