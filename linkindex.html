@@ -33,19 +33,19 @@
   #apartamento {
     font-size: 1.8rem;
     font-weight: bold;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem; /* 2cm ~ 20px aproximado */
   }
 
   p {
     font-size: 1.4rem;
-    margin: 0.5rem 0 1rem 0; /* margen inferior mayor para separar botones */
+    margin: 0.5rem 0 2rem 0; /* 2cm separación inferior de los textos */
   }
 
   button {
     width: 70%;
     font-size: 1.4rem;
-    padding: 1rem;
-    margin: 10px 0; /* separación entre botones */
+    padding: 2rem 1rem; /* doble altura */
+    margin: 20px 0; /* 2cm separación entre botones */
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -56,7 +56,7 @@
   button:active {
     transform: translateY(2px);
     box-shadow: 0 2px #666;
-    background-color: #6c757d !important; /* flash temporal al pulsar */
+    background-color: #6c757d !important; /* flash temporal */
     color: white;
   }
 
@@ -80,9 +80,9 @@
   @media (max-width: 400px) {
     .cuadro { padding: 1.8rem; }
     h2 { font-size: 2rem; }
-    #apartamento { font-size: 1.5rem; }
-    p { font-size: 1.2rem; margin-bottom: 0.8rem; }
-    button { font-size: 1.2rem; padding: 0.9rem; width: 80%; margin: 8px 0; }
+    #apartamento { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    p { font-size: 1.2rem; margin-bottom: 1.5rem; }
+    button { font-size: 1.2rem; padding: 1.8rem 0.9rem; width: 80%; margin: 16px 0; }
   }
 </style>
 </head>
@@ -161,13 +161,13 @@
   setInterval(validarAcceso, 60000);
 
   btnAbrir.onclick = () => {
-    btnAbrir.style.backgroundColor = '#218838'; // efecto flash breve
+    btnAbrir.style.backgroundColor = '#218838'; // flash breve
     setTimeout(()=> btnAbrir.style.backgroundColor = '#28a745', 150);
     fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
   };
 
   btnApagar.onclick = () => {
-    btnApagar.style.backgroundColor = '#c82333';
+    btnApagar.style.backgroundColor = '#c82333'; // flash breve
     setTimeout(()=> btnApagar.style.backgroundColor = '#dc3545', 150);
     fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
   };
