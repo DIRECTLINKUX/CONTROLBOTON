@@ -48,19 +48,27 @@ h2{
   align-items: flex-start;
 }
 
-/* Fila horizontal para Inicio/Fin */
-.fecha-hora-horizontal{
+/* Contenedor combinado Inicio/Fin */
+.fecha-hora-combinada{
   display: flex;
-  gap:2rem;
+  gap:3rem;
+  justify-content: flex-start;
   align-items: flex-start;
 }
 
-/* Bloque de fecha+hora alineadas verticalmente */
-.fecha-hora-vertical{
+/* Columnas Inicio/Fin */
+.columna{
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap:0.2rem;
+}
+
+/* Subcolumnas fecha/hora */
+.subcolumna{
+  display: flex;
+  flex-direction: row;
+  gap:1rem;
+  align-items: center;
 }
 
 /* Paneles puertas */
@@ -146,9 +154,8 @@ button:disabled{
     width:45%;
     font-size:1.7rem;
   }
-  .fecha-hora-horizontal{
+  .fecha-hora-combinada{
     flex-direction: column;
-    align-items: flex-start;
     gap:0.5rem;
   }
 }
@@ -162,31 +169,35 @@ button:disabled{
 
   <h2>Apertura de Puertas</h2>
 
-  <!-- Apartamento y estado en una línea -->
+  <!-- Apartamento y estado -->
   <div class="fecha-hora">
     <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
-  <!-- INICIO Y FIN EN UNA SOLA LINEA CADA UNO -->
-  <div class="fecha-hora fecha-hora-horizontal">
-    <div class="fecha-hora-vertical">
-      <span>Inicio:</span>
-      <span id="fechaInicio"></span>
+  <!-- Fechas y horas Inicio/Fin -->
+  <div class="fecha-hora fecha-hora-combinada">
+    <!-- Columna de Inicio -->
+    <div class="columna">
+      <div class="subcolumna">
+        <span>Inicio:</span>
+        <span id="fechaInicio"></span>
+      </div>
+      <div class="subcolumna">
+        <span>&nbsp;</span>
+        <span id="horaInicio"></span>
+      </div>
     </div>
-    <div class="fecha-hora-vertical">
-      <span>&nbsp;</span>
-      <span id="horaInicio"></span>
-    </div>
-  </div>
 
-  <div class="fecha-hora fecha-hora-horizontal">
-    <div class="fecha-hora-vertical">
-      <span>Fin:</span>
-      <span id="fechaFin"></span>
-    </div>
-    <div class="fecha-hora-vertical">
-      <span>&nbsp;</span>
-      <span id="horaFin"></span>
+    <!-- Columna de Fin -->
+    <div class="columna">
+      <div class="subcolumna">
+        <span>Fin:</span>
+        <span id="fechaFin"></span>
+      </div>
+      <div class="subcolumna">
+        <span>&nbsp;</span>
+        <span id="horaFin"></span>
+      </div>
     </div>
   </div>
 
