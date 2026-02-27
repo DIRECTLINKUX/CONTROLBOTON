@@ -48,18 +48,103 @@ h2{
   align-items: flex-start;
 }
 
-/* Alineación inicio/fin en columnas */
-.linea-fecha{
+/* Mini tabla de inicio/fin alineadas verticalmente */
+.mini-tabla{
   display: grid;
-  grid-template-columns: auto auto auto; /* columna título, fecha, hora */
-  column-gap: 2rem;
-  font-size:2.5rem;
-  margin-bottom: 0.5rem;
-  justify-content: start;
+  grid-template-columns: auto auto;
+  column-gap: 4rem; /* separación entre columna de fecha y columna de hora */
+  row-gap: 0.2rem;
+  font-size: 2.5rem;
 }
 
-.linea-fecha div{
-  text-align: left;
+/* Paneles puertas */
+.panel{
+  border-radius:15px;
+  padding:1.5rem;
+  margin-bottom:2rem;
+  box-shadow:0 8px 18px rgba(0,0,0,0.25);
+  position:relative;
+  text-align: center;
+}
+
+.panel.portal{
+  background:#e3f5ea;
+  border:3px solid #145c2c;
+}
+
+.panel.apto{
+  background:#e8edff;
+  border:3px solid #1a3f9e;
+}
+
+/* Estado de puerta centrado */
+.estadoPuerta{
+  font-weight:bold;
+  font-size:1.8rem;
+  margin-bottom:1rem;
+}
+
+/* Contenedor botones */
+.botones{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:6rem;
+  margin-top:2rem;
+  flex-wrap:wrap;
+}
+
+/* Botones */
+button{
+  width:250px;
+  padding:1.6rem 0.5rem;
+  font-size:2rem;
+  border-radius:15px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  transition:all .15s;
+  color:white;
+  box-shadow:0 6px 12px rgba(0,0,0,0.4);
+}
+
+.btn-abrir{
+  background:linear-gradient(to bottom,#1f7a3a,#0f4f23);
+}
+
+.btn-cerrar{
+  background:linear-gradient(to bottom,#a32020,#5c0f0f);
+}
+
+button:disabled{
+  background:#999!important;
+  color:#555!important;
+  box-shadow:none;
+  cursor:not-allowed;
+}
+
+/* Estado general */
+.habilitado{
+  color:#0b7a2a;
+  font-weight:bold;
+}
+
+.denegado{
+  color:#b30000;
+  font-weight:bold;
+}
+
+/* Responsive */
+@media(max-width:700px){
+  button{
+    width:45%;
+    font-size:1.7rem;
+  }
+  .mini-tabla{
+    display: flex;
+    flex-direction: column;
+    gap:0.2rem;
+  }
 }
 
 </style>
@@ -76,14 +161,15 @@ h2{
     <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
-  <!-- INICIO y FIN en una sola línea cada uno -->
-  <div class="linea-fecha">
+  <!-- INICIO Y FIN EN UNA SOLA LINEA CADA UNO, FECHAS Y HORAS ALINEADAS -->
+  <div class="mini-tabla">
     <div>Inicio:</div>
+    <div>&nbsp;</div>
     <div id="fechaInicio"></div>
     <div id="horaInicio"></div>
-  </div>
-  <div class="linea-fecha">
+
     <div>Fin:</div>
+    <div>&nbsp;</div>
     <div id="fechaFin"></div>
     <div id="horaFin"></div>
   </div>
