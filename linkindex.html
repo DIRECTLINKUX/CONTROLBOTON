@@ -48,13 +48,25 @@ h2{
   align-items: flex-start;
 }
 
-/* Mini tabla de inicio/fin alineadas verticalmente */
+/* Fila horizontal para Inicio/Fin */
+.fecha-hora-horizontal{
+  display: flex;
+  gap:2rem;
+  align-items: flex-start;
+}
+
+/* Bloque de fecha+hora alineadas verticalmente */
+.fecha-hora-vertical{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap:0.2rem;
+}
+
+/* Mini tabla alineada en línea */
 .mini-tabla{
-  display: grid;
-  grid-template-columns: auto auto;
-  column-gap: 4rem; /* separación entre columna de fecha y columna de hora */
-  row-gap: 0.2rem;
-  font-size: 2.5rem;
+  display: flex;
+  gap:4rem; /* espacio entre columna de fecha y hora */
 }
 
 /* Paneles puertas */
@@ -140,10 +152,10 @@ button:disabled{
     width:45%;
     font-size:1.7rem;
   }
-  .mini-tabla{
-    display: flex;
+  .fecha-hora-horizontal{
     flex-direction: column;
-    gap:0.2rem;
+    align-items: flex-start;
+    gap:0.5rem;
   }
 }
 
@@ -162,16 +174,14 @@ button:disabled{
   </div>
 
   <!-- INICIO Y FIN EN UNA SOLA LINEA CADA UNO, FECHAS Y HORAS ALINEADAS -->
-  <div class="mini-tabla">
-    <div>Inicio:</div>
-    <div>&nbsp;</div>
-    <div id="fechaInicio"></div>
-    <div id="horaInicio"></div>
+  <div class="fecha-hora-horizontal mini-tabla">
+    <div><span>Inicio:</span> <span id="fechaInicio"></span></div>
+    <div><span>&nbsp;</span> <span id="horaInicio"></span></div>
+  </div>
 
-    <div>Fin:</div>
-    <div>&nbsp;</div>
-    <div id="fechaFin"></div>
-    <div id="horaFin"></div>
+  <div class="fecha-hora-horizontal mini-tabla">
+    <div><span>Fin:</span> <span id="fechaFin"></span></div>
+    <div><span>&nbsp;</span> <span id="horaFin"></span></div>
   </div>
 
   <!-- PUERTA PORTAL -->
