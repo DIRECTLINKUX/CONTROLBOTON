@@ -37,10 +37,24 @@ h2{
   text-align:center;
 }
 
+/* Contenedor fechas tipo tabla */
 .fecha-hora{
+  display: flex;
   font-size:2.5rem;
   text-align:left;
   margin-bottom:1rem;
+  gap:1rem;
+}
+
+.fecha-hora .label{
+  width:120px;
+  font-weight:bold;
+}
+
+.fecha-hora .valores{
+  display: flex;
+  flex-direction: column;
+  gap:0.3rem;
 }
 
 /* Paneles puertas */
@@ -110,7 +124,7 @@ button:disabled{
   cursor:not-allowed;
 }
 
-/* Estado general (ya no usamos mensaje debajo) */
+/* Estado general */
 .habilitado{
   color:#0b7a2a;
   font-weight:bold;
@@ -127,6 +141,10 @@ button:disabled{
     width:45%;
     font-size:1.7rem;
   }
+  .fecha-hora{
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 </style>
@@ -139,16 +157,27 @@ button:disabled{
   <h2>Apertura de Puertas</h2>
 
   <div class="fecha-hora">
-    Apartamento: <span id="apartamento"></span>
-    <span id="estadoApartamento" style="margin-left:2rem; font-weight:bold;"></span>
+    <div class="label">Apartamento:</div>
+    <div class="valores">
+      <span id="apartamento"></span>
+      <span id="estadoApartamento" style="font-weight:bold;"></span>
+    </div>
   </div>
 
   <div class="fecha-hora">
-    Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span>
+    <div class="label">Inicio:</div>
+    <div class="valores">
+      <span id="fechaInicio"></span>
+      <span id="horaInicio"></span>
+    </div>
   </div>
 
   <div class="fecha-hora">
-    Fin  : <span id="fechaFin"></span> <span id="horaFin"></span>
+    <div class="label">Fin:</div>
+    <div class="valores">
+      <span id="fechaFin"></span>
+      <span id="horaFin"></span>
+    </div>
   </div>
 
   <!-- PUERTA PORTAL -->
