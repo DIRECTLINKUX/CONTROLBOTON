@@ -6,7 +6,7 @@
 <!-- ================================================= -->
 <head>
 <meta charset="UTF-8">
-<title>Apertura de 6 Puertas</title>
+<title>Apertura de 7 Puertas</title>
 
 <style>
 
@@ -148,60 +148,61 @@ font-size:1.7rem;
 </head>
 
 
-<!-- ================================================= -->
-<!-- BLOQUE 8 — INTERFAZ VISUAL -->
-<!-- ================================================= -->
-<body>
 
+
+
+<!-- ================================================= -->
+<!-- BLOQUE 8 — INTERFAZ VISUAL (modificado) -->
+<!-- ================================================= -->
 <div class="cuadro">
 
-<h2 style="font-size:4.5rem; text-align:center;">Apertura de Puertas</h2>
+  <h2 style="font-size:4.5rem; text-align:center;">Apertura de Puertas</h2>
 
-<div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
-Apartamento: <span id="apartamento"></span>
+  <div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
+    Apartamento: <span id="apartamento"></span>
+    <span id="estadoApartamento" style="margin-left:2rem; font-weight:bold;"></span>
+  </div>
+
+  <div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
+    Inicio:
+    <span id="fechaInicio"></span>
+    <span id="horaInicio"></span>
+  </div>
+
+  <div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
+    Fin  : 
+    <span id="fechaFin"></span>
+    <span id="horaFin"></span>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- BLOQUE 9 — PUERTA PORTAL -->
+  <!-- ================================================= -->
+  <div class="panel portal">
+    <div style="font-size:2.5rem; font-weight:bold; text-align:center;">Puerta Portal</div>
+
+    <div class="botones">
+      <button id="abrir" class="btn-abrir">Abrir</button>
+      <button id="apagar" class="btn-cerrar">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- BLOQUE 10 — PUERTA APARTAMENTO -->
+  <!-- ================================================= -->
+  <div class="panel apto">
+    <div style="font-size:2.5rem; font-weight:bold; text-align:center;">Puerta Apartamento</div>
+
+    <div class="botones">
+      <button id="abrirApto" class="btn-abrir">Abrir</button>
+      <button id="apagarApto" class="btn-cerrar">Cerrar</button>
+    </div>
+  </div>
+
+  <p id="mensaje"></p>
 </div>
 
-<div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
-Inicio:
-<span id="fechaInicio"></span>
-<span id="horaInicio"></span>
-</div>
 
-<div class="fecha-hora" style="text-align:left; font-size:2.5rem;">
-Fin  : 
-<span id="fechaFin"></span>
-<span id="horaFin"></span>
-</div>
-
-<!-- ================================================= -->
-<!-- BLOQUE 9 — PUERTA PORTAL -->
-<!-- ================================================= -->
-
-<div class="panel portal">
-<div style="font-size:2.5rem; font-weight:bold; text-align:center;">Puerta Portal</div>
-
-<div class="botones">
-<button id="abrir" class="btn-abrir">Abrir</button>
-<button id="apagar" class="btn-cerrar">Cerrar</button>
-</div>
-</div>
-
-<!-- ================================================= -->
-<!-- BLOQUE 10 — PUERTA APARTAMENTO -->
-<!-- ================================================= -->
-
-<div class="panel apto">
-<div style="font-size:2.5rem; font-weight:bold; text-align:center;">Puerta Apartamento</div>
-
-<div class="botones">
-<button id="abrirApto" class="btn-abrir">Abrir</button>
-<button id="apagarApto" class="btn-cerrar">Cerrar</button>
-</div>
-</div>
-
-<p id="mensaje"></p>
-
-</div>
 
 
 <!-- ================================================= -->
@@ -288,31 +289,47 @@ horaInicio.textContent=inicio.hora;
 fechaFin.textContent=fin.fecha;
 horaFin.textContent=fin.hora;
 
-/* =============================================== */
-/* BLOQUE 17 — VALIDACIÓN HORARIA */
-/* =============================================== */
 
+
+
+
+<!-- ================================================= -->
+<!-- BLOQUE 17 — VALIDACIÓN HORARIA (modificado) -->
+<!-- ================================================= -->
+<script>
 function validarAcceso(){
 
-const ahora=new Date();
-const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
-const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
 
-const acceso=(ahora>=fIni&&ahora<=fFin);
+  const acceso = (ahora >= fIni && ahora <= fFin);
 
-btnAbrir.disabled=!(acceso&&p);
-btnApagar.disabled=!(acceso&&p);
-btnAbrirApto.disabled=!(acceso&&q);
-btnApagarApto.disabled=!(acceso&&q);
+  btnAbrir.disabled = !(acceso && p);
+  btnApagar.disabled = !(acceso && p);
+  btnAbrirApto.disabled = !(acceso && q);
+  btnApagarApto.disabled = !(acceso && q);
 
-mensaje.innerHTML=
-acceso
-?'<span class="habilitado">Acceso habilitado</span>'
-:'<span class="denegado">Fuera de horario</span>';
+  mensaje.innerHTML =
+    acceso
+      ? '<span class="habilitado">Acceso habilitado</span>'
+      : '<span class="denegado">Fuera de horario</span>';
+
+  // ===== ACTUALIZAR ESTADO DEL APARTAMENTO =====
+  const estado = (acceso && q) ? 'Activo' : 'Inactivo';
+  const estadoSpan = document.getElementById('estadoApartamento');
+  estadoSpan.textContent = estado;
+  estadoSpan.style.color = (estado === 'Activo') ? '#0b7a2a' : '#b30000';
 }
 
+// Ejecutar la primera validación
 validarAcceso();
-setInterval(validarAcceso,60000);
+
+// Actualizar cada minuto
+setInterval(validarAcceso, 60000);
+</script>
+
+
 
 
 /* =============================================== */
