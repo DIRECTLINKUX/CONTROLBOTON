@@ -48,11 +48,11 @@ h2{
   align-items: center;
 }
 
-/* Contenedor vertical para fechas */
-.fecha-col{
+/* Contenedor fecha + hora en línea */
+.fecha-hora-inline{
   display: flex;
-  flex-direction: column;
-  gap:0.2rem;
+  gap:1rem;
+  align-items: center;
 }
 
 /* Paneles puertas */
@@ -159,28 +159,20 @@ button:disabled{
     <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
-  <!-- Fecha inicio y hora inicio alineadas verticalmente -->
-  <div class="fecha-hora">
-    <div class="fecha-col">
-      <span>Inicio Fecha:</span>
-      <span id="fechaInicio"></span>
-    </div>
-    <div class="fecha-col">
-      <span>Inicio Hora:</span>
-      <span id="horaInicio"></span>
-    </div>
+  <!-- Fecha inicio y hora inicio en la misma línea -->
+  <div class="fecha-hora fecha-hora-inline">
+    <span>Inicio Fecha:</span>
+    <span id="fechaInicio"></span>
+    <span>Hora:</span>
+    <span id="horaInicio"></span>
   </div>
 
-  <!-- Fecha fin y hora fin alineadas verticalmente -->
-  <div class="fecha-hora">
-    <div class="fecha-col">
-      <span>Fin Fecha:</span>
-      <span id="fechaFin"></span>
-    </div>
-    <div class="fecha-col">
-      <span>Fin Hora:</span>
-      <span id="horaFin"></span>
-    </div>
+  <!-- Fecha fin y hora fin en la misma línea -->
+  <div class="fecha-hora fecha-hora-inline">
+    <span>Fin Fecha:</span>
+    <span id="fechaFin"></span>
+    <span>Hora:</span>
+    <span id="horaFin"></span>
   </div>
 
   <!-- PUERTA PORTAL -->
