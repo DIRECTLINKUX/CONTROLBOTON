@@ -48,14 +48,14 @@ h2{
   align-items: flex-start;
 }
 
-/* Fila horizontal para título + fecha + hora */
+/* Fila horizontal para Inicio/Fin */
 .fecha-hora-horizontal{
   display: flex;
   gap:2rem;
   align-items: flex-start;
 }
 
-/* Cada bloque de fecha + hora vertical */
+/* Bloque de fecha+hora alineadas verticalmente */
 .fecha-hora-vertical{
   display: flex;
   flex-direction: column;
@@ -167,26 +167,26 @@ button:disabled{
     <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
-  <!-- FILA HORIZONTAL: Inicio Fecha + Hora -->
+  <!-- FILA HORIZONTAL: Inicio -->
   <div class="fecha-hora fecha-hora-horizontal">
     <div class="fecha-hora-vertical">
-      <span>Fecha Inicio:</span>
+      <span>Inicio:</span>
       <span id="fechaInicio"></span>
     </div>
     <div class="fecha-hora-vertical">
-      <span>Hora Inicio:</span>
+      <span>&nbsp;</span> <!-- espacio para alinear la hora debajo -->
       <span id="horaInicio"></span>
     </div>
   </div>
 
-  <!-- FILA HORIZONTAL: Fin Fecha + Hora -->
+  <!-- FILA HORIZONTAL: Fin -->
   <div class="fecha-hora fecha-hora-horizontal">
     <div class="fecha-hora-vertical">
-      <span>Fecha Fin:</span>
+      <span>Fin:</span>
       <span id="fechaFin"></span>
     </div>
     <div class="fecha-hora-vertical">
-      <span>Hora Fin:</span>
+      <span>&nbsp;</span>
       <span id="horaFin"></span>
     </div>
   </div>
