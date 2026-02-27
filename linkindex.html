@@ -1,206 +1,373 @@
 <!DOCTYPE html>
 <html lang="es">
+
+<!-- ================================================= -->
+<!-- BLOQUE 1 — CABECERA HTML -->
+<!-- ================================================= -->
 <head>
 <meta charset="UTF-8">
-<title>Control de Apertura</title>
+<title>Apertura de 6 Puertas</title>
+
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to bottom, #e0e0e0, #cfcfcf);
+
+
+/* BLOQUE 2 — ESTILO GENERAL (agregar al final) */
+
+/* Flex para filas etiqueta-valor */
+.fila-flex {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-    height: 100vh;
-  }
+    justify-content: space-between;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 1rem auto;
+}
 
-  .cuadro {
-    background: white;
-    padding: 3rem;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-    text-align: center;
-    width: 98%;
-    max-width: 750px;
-  }
-
-  h2 {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    white-space: nowrap;
-  }
-
-  #apartamento {
-    font-size: 3.6rem;
+/* Etiqueta a la izquierda */
+.fila-flex .label {
+    text-align: left;
     font-weight: bold;
-    margin-bottom: 2rem;
-  }
+}
 
-  .fecha-hora {
-    font-size: 2.8rem;
-    margin-bottom: 2rem;
-  }
+/* Valor a la derecha */
+.fila-flex .valor {
+    text-align: right;
+}
 
-  .botones {
-    display: flex;
-    justify-content: center;
-    gap: 2cm;
-    margin-top: 2cm;
-  }
-
-  button {
-    width: 280px;
-    padding: 2.5rem 1rem;
-    font-size: 2.8rem;
-    border-radius: 15px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.15s ease;
-    transform: translateY(0);
-  }
-
-  /* BOTÓN VERDE 3D */
-  #abrir {
-    background: linear-gradient(to bottom, #34d058, #28a745);
-    color: white;
-    box-shadow:
-      0 8px 0 #1e7e34,
-      0 12px 20px rgba(0,0,0,0.3);
-  }
-
-  /* BOTÓN ROJO 3D */
-  #apagar {
-    background: linear-gradient(to bottom, #ff5f5f, #dc3545);
-    color: white;
-    box-shadow:
-      0 8px 0 #a71d2a,
-      0 12px 20px rgba(0,0,0,0.3);
-  }
-
-  /* EFECTO AL PULSAR (SE HUNDE) */
-  button:active {
-    transform: translateY(6px);
-    box-shadow:
-      0 2px 0 rgba(0,0,0,0.4),
-      0 6px 12px rgba(0,0,0,0.3);
-  }
-
-  button:disabled {
-    background: #aaa !important;
-    color: #666 !important;
-    box-shadow: none;
-    cursor: not-allowed;
-  }
-
-  #mensaje {
-    font-size: 2.6rem;
-    color: red;
-    margin-top: 1rem;
-  }
-
-  @media (max-width: 700px) {
-    .cuadro { width: 95%; }
-    button {
-      width: 45%;
-      font-size: 2.2rem;
-      padding: 2rem 0.5rem;
+/* Responsive: en pantallas <500px, apilar verticalmente */
+@media(max-width:500px){
+    .fila-flex {
+        flex-direction: column;
+        align-items: flex-start;
     }
-    h2 { font-size: 3rem; }
-    #apartamento { font-size: 2.5rem; }
-    .fecha-hora { font-size: 2rem; }
-  }
+    .fila-flex .valor {
+        text-align: left;
+        margin-top: 0.2rem;
+    }
+}
+
+
+
+
+/* ================================================= */
+/* BLOQUE 3 — PANELES DE PUERTAS */
+/* ================================================= */
+
+.panel{
+border-radius:15px;
+padding:1.5rem;
+margin-bottom:2rem;
+box-shadow:0 8px 18px rgba(0,0,0,0.25);
+}
+
+.panel.portal{
+background:#e3f5ea;
+border:3px solid #145c2c;
+}
+
+.panel.apto{
+background:#e8edff;
+border:3px solid #1a3f9e;
+}
+
+/* ================================================= */
+/* BLOQUE 4 — CONTENEDOR BOTONES */
+/* ================================================= */
+
+.botones{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:6rem;
+margin-top:2rem;
+flex-wrap:wrap;
+}
+
+/* ================================================= */
+/* BLOQUE 5 — BOTONES */
+/* ================================================= */
+
+button{
+width:250px;
+padding:1.6rem 0.5rem;
+font-size:2rem;
+border-radius:15px;
+border:none;
+cursor:pointer;
+font-weight:bold;
+transition:all .15s;
+color:white;
+box-shadow:0 6px 12px rgba(0,0,0,0.4);
+}
+
+.btn-abrir{
+background:linear-gradient(to bottom,#1f7a3a,#0f4f23);
+}
+
+.btn-cerrar{
+background:linear-gradient(to bottom,#a32020,#5c0f0f);
+}
+
+button:disabled{
+background:#050505!important;
+color:#222!important;
+box-shadow:none;
+cursor:not-allowed;
+}
+
+/* ================================================= */
+/* BLOQUE 6 — MENSAJES */
+/* ================================================= */
+
+#mensaje{
+font-size:2rem;
+margin-top:1rem;
+}
+
+.habilitado{
+color:#0b7a2a;
+font-weight:bold;
+}
+
+.denegado{
+color:#b30000;
+font-weight:bold;
+}
+
+/* ================================================= */
+/* BLOQUE 7 — RESPONSIVE */
+/* ================================================= */
+
+@media(max-width:700px){
+button{
+width:45%;
+font-size:1.7rem;
+}
+}
+
 </style>
 </head>
+
+<!-- ================================================= -->
+<!-- BLOQUE 8 — INTERFAZ VISUAL (MODIFICADO) -->
+<!-- ================================================= -->
 <body>
 
 <div class="cuadro">
-  <h2>Control de Apertura</h2>
-  <p id="apartamento"></p>
 
-  <div class="fecha-hora">
-    Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span>
-  </div>
+<h2 style="text-align:center;">Apertura de Puertas</h2>
 
-  <div class="fecha-hora">
-    Fin: <span id="fechaFin"></span> <span id="horaFin"></span>
-  </div>
-  
-  <div class="botones">
-    <button id="abrir">Abrir</button>
-    <button id="apagar">Cerrar</button>
-  </div>
-
-  <p id="mensaje"></p>
+<div class="fecha-hora" style="text-align:left; font-size:3rem;">
+Apartamento: <span id="apartamento"></span>
 </div>
 
+<div class="fecha-hora" style="text-align:left; font-size:3rem;">
+Inicio:
+<span id="fechaInicio"></span>
+<span id="horaInicio"></span>
+</div>
+
+<div class="fecha-hora" style="text-align:left; font-size:3rem;">
+Fin:
+<span id="fechaFin"></span>
+<span id="horaFin"></span>
+</div>
+
+<!-- ================================================= -->
+<!-- BLOQUE 9 — PUERTA PORTAL (MODIFICADO) -->
+<!-- ================================================= -->
+
+<div class="panel portal">
+<div style="font-size:2.5rem;font-weight:bold;text-align:center;">Puerta Portal</div>
+
+<div class="botones">
+<!-- Solo un botón Abrir y un botón Cerrar -->
+<button id="abrir" class="btn-abrir">Abrir</button>
+<button id="apagar" class="btn-cerrar">Cerrar</button>
+</div>
+</div>
+
+<!-- ================================================= -->
+<!-- BLOQUE 10 — PUERTA APARTAMENTO (MODIFICADO) -->
+<!-- ================================================= -->
+
+<div class="panel apto">
+<div style="font-size:2.5rem;font-weight:bold;text-align:center;">Puerta Apartamento</div>
+
+<div class="botones">
+<!-- Solo un botón Abrir y un botón Cerrar -->
+<button id="abrirApto" class="btn-abrir">Abrir</button>
+<button id="apagarApto" class="btn-cerrar">Cerrar</button>
+</div>
+</div>
+
+<p id="mensaje"></p>
+
+</div>
+
+<!-- ================================================= -->
+<!-- BLOQUE 11 — SCRIPT PRINCIPAL -->
+<!-- ================================================= -->
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const f1 = params.get('f1'); 
-  const h1 = params.get('h1'); 
-  const f2 = params.get('f2'); 
-  const h2 = params.get('h2'); 
-  const a  = Math.min(Math.max(parseInt(params.get('a')),1),10) || 1;
 
-  const luces = {
-    1: {encender: 'http://192.168.1.51/encender', apagar: 'http://192.168.1.51/apagar'},
-    2: {encender: 'http://192.168.1.52/encender', apagar: 'http://192.168.1.52/apagar'},
-    3: {encender: 'http://192.168.1.53/encender', apagar: 'http://192.168.1.53/apagar'},
-    4: {encender: 'http://192.168.1.54/encender', apagar: 'http://192.168.1.54/apagar'},
-    5: {encender: 'http://192.168.1.55/encender', apagar: 'http://192.168.1.55/apagar'},
-    6: {encender: 'http://192.168.1.56/encender', apagar: 'http://192.168.1.56/apagar'},
-    7: {encender: 'http://192.168.1.57/encender', apagar: 'http://192.168.1.57/apagar'},
-    8: {encender: 'http://192.168.1.58/encender', apagar: 'http://192.168.1.58/apagar'},
-    9: {encender: 'http://192.168.1.59/encender', apagar: 'http://192.168.1.59/apagar'},
-    10:{encender: 'http://192.168.1.60/encender', apagar: 'http://192.168.1.60/apagar'}
-  };
+/* =============================================== */
+/* BLOQUE 12 — LECTURA DE PARÁMETROS URL */
+/* =============================================== */
 
-  function formatearFechaHora(f, h){
-    return { 
-      fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
-      hora: h.slice(0,2)+':'+h.slice(2,4)
-    };
-  }
+const params=new URLSearchParams(window.location.search);
 
-  const inicio = formatearFechaHora(f1,h1);
-  const fin = formatearFechaHora(f2,h2);
+const f1=params.get('f1');
+const h1=params.get('h1');
+const f2=params.get('f2');
+const h2=params.get('h2');
 
-  document.getElementById('apartamento').textContent = `Apartamento ${a}`;
-  document.getElementById('fechaInicio').textContent = inicio.fecha;
-  document.getElementById('horaInicio').textContent = inicio.hora;
-  document.getElementById('fechaFin').textContent = fin.fecha;
-  document.getElementById('horaFin').textContent = fin.hora;
+const a=Math.min(Math.max(parseInt(params.get('a')),1),10)||1;
+const p=params.get('p')==='1';
+const q=params.get('q')==='1';
 
-  const btnAbrir = document.getElementById('abrir');
-  const btnApagar = document.getElementById('apagar');
-  const mensaje = document.getElementById('mensaje');
+/* =============================================== */
+/* BLOQUE 13 — REFERENCIAS DOM */
+/* =============================================== */
 
-  function validarAcceso(){
-    const ahora = new Date();
-    const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-    const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+const btnAbrir=document.getElementById('abrir');
+const btnApagar=document.getElementById('apagar');
+const btnAbrirApto=document.getElementById('abrirApto');
+const btnApagarApto=document.getElementById('apagarApto');
+const mensaje=document.getElementById('mensaje');
 
-    if(ahora >= fIni && ahora <= fFin){
-      btnAbrir.disabled = false;
-      btnApagar.disabled = false;
-      mensaje.textContent = '';
-    } else {
-      btnAbrir.disabled = true;
-      btnApagar.disabled = true;
-      mensaje.textContent = 'Fuera de fechas u horario';
-    }
-  }
+/* =============================================== */
+/* BLOQUE 14 — DIRECCIONES PORTAL */
+/* =============================================== */
 
-  validarAcceso();
-  setInterval(validarAcceso, 60000);
+const portalLuces={
+1:{encender:'http://192.168.1.51/abrirPortal',apagar:'http://192.168.1.51/cerrarPortal'},
+2:{encender:'http://192.168.1.52/abrirPortal',apagar:'http://192.168.1.52/cerrarPortal'},
+3:{encender:'http://192.168.1.53/abrirPortal',apagar:'http://192.168.1.53/cerrarPortal'},
+4:{encender:'http://192.168.1.54/abrirPortal',apagar:'http://192.168.1.54/cerrarPortal'},
+5:{encender:'http://192.168.1.55/abrirPortal',apagar:'http://192.168.1.55/cerrarPortal'},
+6:{encender:'http://192.168.1.56/abrirPortal',apagar:'http://192.168.1.56/cerrarPortal'},
+7:{encender:'http://192.168.1.57/abrirPortal',apagar:'http://192.168.1.57/cerrarPortal'},
+8:{encender:'http://192.168.1.58/abrirPortal',apagar:'http://192.168.1.58/cerrarPortal'},
+9:{encender:'http://192.168.1.59/abrirPortal',apagar:'http://192.168.1.59/cerrarPortal'},
+10:{encender:'http://192.168.1.60/abrirPortal',apagar:'http://192.168.1.60/cerrarPortal'}
+};
 
-  btnAbrir.onclick = () => {
-    fetch(luces[a].encender).catch(()=>alert('No se pudo enviar señal'));
-  };
+/* =============================================== */
+/* BLOQUE 15 — DIRECCIONES APARTAMENTO */
+/* =============================================== */
 
-  btnApagar.onclick = () => {
-    fetch(luces[a].apagar).catch(()=>alert('No se pudo enviar señal'));
-  };
+const aptoLuces={
+1:{encender:'http://192.168.1.51/abrirApto',apagar:'http://192.168.1.51/cerrarApto'},
+2:{encender:'http://192.168.1.52/abrirApto',apagar:'http://192.168.1.52/cerrarApto'},
+3:{encender:'http://192.168.1.53/abrirApto',apagar:'http://192.168.1.53/cerrarApto'},
+4:{encender:'http://192.168.1.54/abrirApto',apagar:'http://192.168.1.54/cerrarApto'},
+5:{encender:'http://192.168.1.55/abrirApto',apagar:'http://192.168.1.55/cerrarApto'},
+6:{encender:'http://192.168.1.56/abrirApto',apagar:'http://192.168.1.56/cerrarApto'},
+7:{encender:'http://192.168.1.57/abrirApto',apagar:'http://192.168.1.57/cerrarApto'},
+8:{encender:'http://192.168.1.58/abrirApto',apagar:'http://192.168.1.58/cerrarApto'},
+9:{encender:'http://192.168.1.59/abrirApto',apagar:'http://192.168.1.59/cerrarApto'},
+10:{encender:'http://192.168.1.60/abrirApto',apagar:'http://192.168.1.60/cerrarApto'}
+};
+
+/* =============================================== */
+/* BLOQUE 16 — FORMATEO FECHA */
+/* =============================================== */
+
+function formatearFechaHora(f,h){
+return{
+fecha:f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
+hora:h.slice(0,2)+':'+h.slice(2,4)
+};
+}
+
+const inicio=formatearFechaHora(f1,h1);
+const fin=formatearFechaHora(f2,h2);
+
+apartamento.textContent=a;
+fechaInicio.textContent=inicio.fecha;
+horaInicio.textContent=inicio.hora;
+fechaFin.textContent=fin.fecha;
+horaFin.textContent=fin.hora;
+
+/* =============================================== */
+/* BLOQUE 17 — VALIDACIÓN HORARIA */
+/* =============================================== */
+
+function validarAcceso(){
+
+const ahora=new Date();
+const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
+const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
+
+const acceso=(ahora>=fIni&&ahora<=fFin);
+
+btnAbrir.disabled=!(acceso&&p);
+btnApagar.disabled=!(acceso&&p);
+btnAbrirApto.disabled=!(acceso&&q);
+btnApagarApto.disabled=!(acceso&&q);
+
+mensaje.innerHTML=
+acceso
+?'<span class="habilitado">Acceso habilitado</span>'
+:'<span class="denegado">Fuera de horario</span>';
+}
+
+validarAcceso();
+setInterval(validarAcceso,60000);
+
+
+/* =============================================== */
+/* BLOQUE 18 — ACCIONES BOTONES (APERTURA 3s + bloqueo + mensaje) */
+/* =============================================== */
+
+function bloquearTodos(botones, estado) {
+    botones.forEach(btn => btn.disabled = estado);
+}
+
+const todosBotones = [btnAbrir, btnApagar, btnAbrirApto, btnApagarApto];
+
+function abrirTemporalGlobal(dispositivo) {
+    // Bloquear todos los botones
+    bloquearTodos(todosBotones, true);
+
+    // Cambiar mensaje a "Puerta abriendo..."
+    mensaje.innerHTML = '<span class="habilitado">Puerta abriendo...</span>';
+
+    // Enviar señal de apertura
+    fetch(dispositivo.encender);
+
+    // Después de 3 segundos, enviar señal de cierre y reactivar botones
+    setTimeout(() => {
+        fetch(dispositivo.apagar);
+
+        // Volver a validar acceso y actualizar el mensaje según horario
+        validarAcceso();
+
+        // Desbloquear todos los botones
+        bloquearTodos(todosBotones, false);
+    }, 3000); // 3 segundos
+}
+
+/* ===== PORTAL ===== */
+btnAbrir.onclick = () => {
+    abrirTemporalGlobal(portalLuces[a]);
+};
+
+/* ===== APARTAMENTO ===== */
+btnAbrirApto.onclick = () => {
+    abrirTemporalGlobal(aptoLuces[a]);
+};
+
+/* ===== CIERRE MANUAL (opcional) ===== */
+btnApagar.onclick = () => {
+    fetch(portalLuces[a].apagar);
+};
+
+btnApagarApto.onclick = () => {
+    fetch(aptoLuces[a].apagar);
+};
+
+
+
 </script>
 
 </body>
