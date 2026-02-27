@@ -37,24 +37,15 @@ h2{
   text-align:center;
 }
 
-/* Contenedor fechas tipo tabla */
+/* Contenedor fechas y apartamento */
 .fecha-hora{
   display: flex;
   font-size:2.5rem;
   text-align:left;
   margin-bottom:1rem;
-  gap:1rem;
-}
-
-.fecha-hora .label{
-  width:120px;
-  font-weight:bold;
-}
-
-.fecha-hora .valores{
-  display: flex;
-  flex-direction: column;
-  gap:0.3rem;
+  gap:2rem;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 /* Paneles puertas */
@@ -64,6 +55,7 @@ h2{
   margin-bottom:2rem;
   box-shadow:0 8px 18px rgba(0,0,0,0.25);
   position:relative;
+  text-align: center;
 }
 
 .panel.portal{
@@ -76,13 +68,11 @@ h2{
   border:3px solid #1a3f9e;
 }
 
-/* Estado de puerta */
+/* Estado de puerta centrado */
 .estadoPuerta{
-  position:absolute;
-  top:10px;
-  right:20px;
   font-weight:bold;
   font-size:1.8rem;
+  margin-bottom:1rem;
 }
 
 /* Contenedor botones */
@@ -144,6 +134,7 @@ button:disabled{
   .fecha-hora{
     flex-direction: column;
     align-items: flex-start;
+    gap:0.5rem;
   }
 }
 
@@ -156,28 +147,19 @@ button:disabled{
 
   <h2>Apertura de Puertas</h2>
 
+  <!-- Apartamento y estado en una línea -->
   <div class="fecha-hora">
-    <div class="label">Apartamento:</div>
-    <div class="valores">
-      <span id="apartamento"></span>
-      <span id="estadoApartamento" style="font-weight:bold;"></span>
-    </div>
+    <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
+  <!-- Fecha inicio y hora inicio -->
   <div class="fecha-hora">
-    <div class="label">Inicio:</div>
-    <div class="valores">
-      <span id="fechaInicio"></span>
-      <span id="horaInicio"></span>
-    </div>
+    <div>Inicio: <span id="fechaInicio"></span> <span id="horaInicio"></span></div>
   </div>
 
+  <!-- Fecha fin y hora fin -->
   <div class="fecha-hora">
-    <div class="label">Fin:</div>
-    <div class="valores">
-      <span id="fechaFin"></span>
-      <span id="horaFin"></span>
-    </div>
+    <div>Fin: <span id="fechaFin"></span> <span id="horaFin"></span></div>
   </div>
 
   <!-- PUERTA PORTAL -->
@@ -291,11 +273,11 @@ function validarAcceso(){
   estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
   estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 
-  // Estado Puerta Portal
+  // Estado Puerta Portal centrado
   estadoPortal.textContent = (acceso && p) ? 'ACTIVO' : 'INACTIVO';
   estadoPortal.style.color = (acceso && p) ? '#0b7a2a' : '#b30000';
 
-  // Estado Puerta Apartamento
+  // Estado Puerta Apartamento centrado
   estadoApto.textContent = (acceso && q) ? 'ACTIVO' : 'INACTIVO';
   estadoApto.style.color = (acceso && q) ? '#0b7a2a' : '#b30000';
 }
