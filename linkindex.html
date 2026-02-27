@@ -63,6 +63,12 @@ h2{
   gap:0.2rem;
 }
 
+/* Mini tabla alineada en línea */
+.mini-tabla{
+  display: flex;
+  gap:4rem; /* espacio entre columna de fecha y hora */
+}
+
 /* Paneles puertas */
 .panel{
   border-radius:15px;
@@ -167,27 +173,15 @@ button:disabled{
     <div>Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span></div>
   </div>
 
-  <!-- INICIO Y FIN EN UNA SOLA LINEA CADA UNO -->
-  <div class="fecha-hora fecha-hora-horizontal">
-    <div class="fecha-hora-vertical">
-      <span>Inicio:</span>
-      <span id="fechaInicio"></span>
-    </div>
-    <div class="fecha-hora-vertical">
-      <span>&nbsp;</span>
-      <span id="horaInicio"></span>
-    </div>
+  <!-- INICIO Y FIN EN UNA SOLA LINEA CADA UNO, FECHAS Y HORAS ALINEADAS -->
+  <div class="fecha-hora-horizontal mini-tabla">
+    <div><span>Inicio:</span> <span id="fechaInicio"></span></div>
+    <div><span>&nbsp;</span> <span id="horaInicio"></span></div>
   </div>
 
-  <div class="fecha-hora fecha-hora-horizontal">
-    <div class="fecha-hora-vertical">
-      <span>Fin:</span>
-      <span id="fechaFin"></span>
-    </div>
-    <div class="fecha-hora-vertical">
-      <span>&nbsp;</span>
-      <span id="horaFin"></span>
-    </div>
+  <div class="fecha-hora-horizontal mini-tabla">
+    <div><span>Fin:</span> <span id="fechaFin"></span></div>
+    <div><span>&nbsp;</span> <span id="horaFin"></span></div>
   </div>
 
   <!-- PUERTA PORTAL -->
