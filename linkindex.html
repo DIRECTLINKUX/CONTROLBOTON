@@ -110,13 +110,7 @@ button:disabled{
   cursor:not-allowed;
 }
 
-/* Mensajes */
-#mensaje{
-  font-size:2rem;
-  margin-top:1rem;
-  text-align:center;
-}
-
+/* Estado general (ya no usamos mensaje debajo) */
 .habilitado{
   color:#0b7a2a;
   font-weight:bold;
@@ -177,15 +171,12 @@ button:disabled{
     </div>
   </div>
 
-  <p id="mensaje"></p>
-
 </div>
 
 <script>
 
 /* ========================== */
 /* BLOQUE 12 — PARÁMETROS URL */
-/* ========================== */
 const params = new URLSearchParams(window.location.search);
 const f1 = params.get('f1');
 const h1 = params.get('h1');
@@ -197,12 +188,10 @@ const q = params.get('q') === '1';
 
 /* ========================== */
 /* BLOQUE 13 — REFERENCIAS DOM */
-/* ========================== */
 const btnAbrir = document.getElementById('abrir');
 const btnApagar = document.getElementById('apagar');
 const btnAbrirApto = document.getElementById('abrirApto');
 const btnApagarApto = document.getElementById('apagarApto');
-const mensaje = document.getElementById('mensaje');
 const estadoApartamento = document.getElementById('estadoApartamento');
 const estadoPortal = document.getElementById('estadoPortal');
 const estadoApto = document.getElementById('estadoApto');
@@ -263,16 +252,11 @@ function validarAcceso(){
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = (ahora >= fIni && ahora <= fFin);
 
-  // Actualizar botones
+  // Botones
   btnAbrir.disabled = !(acceso && p);
   btnApagar.disabled = !(acceso && p);
   btnAbrirApto.disabled = !(acceso && q);
   btnApagarApto.disabled = !(acceso && q);
-
-  // Mensaje central
-  mensaje.innerHTML = acceso
-    ? '<span class="habilitado">Acceso habilitado</span>'
-    : '<span class="denegado">Fuera de horario</span>';
 
   // Estado apartamento
   estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
@@ -300,7 +284,6 @@ const todosBotones = [btnAbrir, btnApagar, btnAbrirApto, btnApagarApto];
 
 function abrirTemporalGlobal(dispositivo){
   bloquearTodos(todosBotones, true);
-  mensaje.innerHTML = '<span class="habilitado">Puerta abriendo...</span>';
   fetch(dispositivo.encender);
   setTimeout(() => {
     fetch(dispositivo.apagar);
