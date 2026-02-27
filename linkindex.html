@@ -38,21 +38,19 @@ h2{
   margin-bottom:1rem;
 }
 
+/* ✅ ALINEACIÓN MILIMÉTRICA */
 .fecha-hora-combinada{
   display:flex;
   flex-direction:column;
   gap:0.5rem;
+  font-size:2.5rem;
 }
 
 .linea{
-  display:flex;
-  gap:1rem;
+  display:grid;
+  grid-template-columns:auto auto auto;
+  column-gap:1rem;
   align-items:center;
-}
-
-/* ✅ SOLO PARA ALINEAR FECHA FIN */
-.fin-ajuste{
-  margin-left:110px;
 }
 
 .panel{
@@ -124,7 +122,7 @@ Apartamento:
 <span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
-<!-- ✅ FECHAS -->
+<!-- ✅ PERFECTAMENTE ALINEADO -->
 <div class="fecha-hora fecha-hora-combinada">
 
   <div class="linea">
@@ -133,7 +131,7 @@ Apartamento:
     <span id="horaInicio"></span>
   </div>
 
-  <div class="linea fin-ajuste">
+  <div class="linea">
     <span>Fin:</span>
     <span id="fechaFin"></span>
     <span id="horaFin"></span>
@@ -141,7 +139,6 @@ Apartamento:
 
 </div>
 
-<!-- PORTAL -->
 <div class="panel portal">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
 <div class="estadoPuerta" id="estadoPortal"></div>
@@ -151,7 +148,6 @@ Apartamento:
 </div>
 </div>
 
-<!-- APARTAMENTO -->
 <div class="panel apto">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
 <div class="estadoPuerta" id="estadoApto"></div>
@@ -201,7 +197,7 @@ document.getElementById('horaInicio').textContent=inicio.hora;
 document.getElementById('fechaFin').textContent=fin.fecha;
 document.getElementById('horaFin').textContent=fin.hora;
 
-/* ✅ VALIDACIÓN RESTAURADA */
+/* VALIDACIÓN */
 function validarAcceso(){
 
 const ahora=new Date();
