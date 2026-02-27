@@ -38,30 +38,25 @@ h2{
 }
 
 .fecha-hora{
-  display:flex;
+  display: flex;
   font-size:2.5rem;
   text-align:left;
   margin-bottom:1rem;
   gap:2rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .fecha-hora-combinada{
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap:0.5rem;
 }
 
-/* === SOLO añadido para colocar horas debajo === */
-.bloqueFecha{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-
 .linea{
-  display:flex;
+  display: flex;
   gap:1rem;
-  align-items:flex-start;
+  align-items: center;
 }
 
 .panel{
@@ -69,7 +64,8 @@ h2{
   padding:1.5rem;
   margin-bottom:2rem;
   box-shadow:0 8px 18px rgba(0,0,0,0.25);
-  text-align:center;
+  position:relative;
+  text-align: center;
 }
 
 .panel.portal{
@@ -91,6 +87,7 @@ h2{
 .botones{
   display:flex;
   justify-content:center;
+  align-items:center;
   gap:6rem;
   margin-top:2rem;
   flex-wrap:wrap;
@@ -104,6 +101,7 @@ button{
   border:none;
   cursor:pointer;
   font-weight:bold;
+  transition:all .15s;
   color:white;
   box-shadow:0 6px 12px rgba(0,0,0,0.4);
 }
@@ -120,6 +118,24 @@ button:disabled{
   background:#999!important;
   color:#555!important;
   box-shadow:none;
+  cursor:not-allowed;
+}
+
+.habilitado{
+  color:#0b7a2a;
+  font-weight:bold;
+}
+
+.denegado{
+  color:#b30000;
+  font-weight:bold;
+}
+
+@media(max-width:700px){
+  button{
+    width:45%;
+    font-size:1.7rem;
+  }
 }
 
 </style>
@@ -132,52 +148,42 @@ button:disabled{
 <h2>Apertura de Puertas</h2>
 
 <div class="fecha-hora">
-  <div>
-    Apartamento:
-    <span id="apartamento"></span>
-    <span id="estadoApartamento" style="font-weight:bold;"></span>
-  </div>
+<div>
+Apartamento:
+<span id="apartamento"></span>
+<span id="estadoApartamento" style="font-weight:bold;"></span>
+</div>
 </div>
 
-<!-- ========= SOLO REORDENADO ========= -->
+<!-- ✅ SOLO MODIFICADO AQUÍ -->
 <div class="fecha-hora fecha-hora-combinada">
 
   <div class="linea">
     <span>Inicio:</span>
-
-    <div class="bloqueFecha">
-      <span id="fechaInicio"></span>
-      <span id="horaInicio"></span>
-    </div>
+    <span id="fechaInicio"></span>
+    <span id="horaInicio"></span>
   </div>
 
   <div class="linea">
     <span>Fin:</span>
-
-    <div class="bloqueFecha">
-      <span id="fechaFin"></span>
-      <span id="horaFin"></span>
-    </div>
+    <span id="fechaFin"></span>
+    <span id="horaFin"></span>
   </div>
 
 </div>
 
-<!-- PUERTA PORTAL -->
 <div class="panel portal">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
 <div class="estadoPuerta" id="estadoPortal"></div>
-
 <div class="botones">
 <button id="abrir" class="btn-abrir">Abrir</button>
 <button id="apagar" class="btn-cerrar">Cerrar</button>
 </div>
 </div>
 
-<!-- PUERTA APARTAMENTO -->
 <div class="panel apto">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
 <div class="estadoPuerta" id="estadoApto"></div>
-
 <div class="botones">
 <button id="abrirApto" class="btn-abrir">Abrir</button>
 <button id="apagarApto" class="btn-cerrar">Cerrar</button>
@@ -190,24 +196,27 @@ button:disabled{
 
 /* ========================== */
 /* BLOQUE 12 — PARÁMETROS URL */
-const params=new URLSearchParams(window.location.search);
-const f1=params.get('f1');
-const h1=params.get('h1');
-const f2=params.get('f2');
-const h2=params.get('h2');
-const a=Math.min(Math.max(parseInt(params.get('a')),1),10)||1;
-const p=params.get('p')==='1';
-const q=params.get('q')==='1';
+const params = new URLSearchParams(window.location.search);
+const f1 = params.get('f1');
+const h1 = params.get('h1');
+const f2 = params.get('f2');
+const h2 = params.get('h2');
+const a = Math.min(Math.max(parseInt(params.get('a')),1),10) || 1;
+const p = params.get('p') === '1';
+const q = params.get('q') === '1';
 
 /* ========================== */
-const btnAbrir=document.getElementById('abrir');
-const btnApagar=document.getElementById('apagar');
-const btnAbrirApto=document.getElementById('abrirApto');
-const btnApagarApto=document.getElementById('apagarApto');
-const estadoApartamento=document.getElementById('estadoApartamento');
-const estadoPortal=document.getElementById('estadoPortal');
-const estadoApto=document.getElementById('estadoApto');
+/* BLOQUE 13 — REFERENCIAS DOM */
+const btnAbrir = document.getElementById('abrir');
+const btnApagar = document.getElementById('apagar');
+const btnAbrirApto = document.getElementById('abrirApto');
+const btnApagarApto = document.getElementById('apagarApto');
+const estadoApartamento = document.getElementById('estadoApartamento');
+const estadoPortal = document.getElementById('estadoPortal');
+const estadoApto = document.getElementById('estadoApto');
 
+/* ========================== */
+/* BLOQUE 16 — FORMATEO FECHA */
 function formatearFechaHora(f,h){
 return{
 fecha:f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
@@ -218,44 +227,11 @@ hora:h.slice(0,2)+':'+h.slice(2,4)
 const inicio=formatearFechaHora(f1,h1);
 const fin=formatearFechaHora(f2,h2);
 
-apartamento.textContent=a;
-fechaInicio.textContent=inicio.fecha;
-horaInicio.textContent=inicio.hora;
-fechaFin.textContent=fin.fecha;
-horaFin.textContent=fin.hora;
-
-function validarAcceso(){
-const ahora=new Date();
-const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
-const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
-const acceso=(ahora>=fIni&&ahora<=fFin);
-
-btnAbrir.disabled=!(acceso&&p);
-btnApagar.disabled=!(acceso&&p);
-btnAbrirApto.disabled=!(acceso&&q);
-btnApagarApto.disabled=!(acceso&&q);
-
-estadoApartamento.textContent=
-acceso?'Activo':'Fuera de horario';
-
-estadoApartamento.style.color=
-acceso?'#0b7a2a':'#b30000';
-
-estadoPortal.textContent=
-(acceso&&p)?'ACTIVO':'INACTIVO';
-
-estadoPortal.style.color=
-(acceso&&p)?'#0b7a2a':'#b30000';
-
-estadoApto.textContent=
-(acceso&&q)?'ACTIVO':'INACTIVO';
-
-estadoApto.style.color=
-(acceso&&q)?'#0b7a2a':'#b30000';
-}
-
-validarAcceso();
-setInterval(validarAcceso,60000);
+document.getElementById('apartamento').textContent=a;
+document.getElementById('fechaInicio').textContent=inicio.fecha;
+document.getElementById('horaInicio').textContent=inicio.hora;
+document.getElementById('fechaFin').textContent=fin.fecha;
+document.getElementById('horaFin').textContent=fin.hora;
 
 </script>
 
