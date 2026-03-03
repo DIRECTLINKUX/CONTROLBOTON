@@ -9,171 +9,214 @@ body{font-family:Arial,sans-serif;background:linear-gradient(to bottom,#d6d6d6,#
 .cuadro{background:white;padding:3rem;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;width:98%;max-width:750px;}
 h2{font-size:4.5rem;margin-bottom:1rem;}
 .fecha-hora{display:flex;font-size:2.5rem;margin-bottom:1rem;justify-content:center;gap:1rem;}
-.fecha-hora-combinada{display:grid;grid-template-columns: 140px 220px 120px;row-gap:0.5rem;font-size:2.5rem;}
+.fecha-hora-combinada{display:grid;grid-template-columns:140px 220px 120px;row-gap:0.5rem;font-size:2.5rem;}
 .panel{border-radius:15px;padding:1.5rem;margin-bottom:2rem;box-shadow:0 8px 18px rgba(0,0,0,0.25);}
 .panel.portal{background:#e3f5ea;border:3px solid #145c2c;}
 .panel.apto{background:#e8edff;border:3px solid #1a3f9e;}
 .panel.luces{background:#fff3e6;border:3px solid #b36000;}
 .estadoPuerta{font-weight:bold;font-size:1.8rem;margin-bottom:1rem;}
 .botones{display:flex;justify-content:center;flex-wrap:wrap;gap:1rem;margin-top:1rem;}
-button{width:180px;padding:1rem 0.5rem;font-size:1.6rem;border-radius:15px;border:none;cursor:pointer;font-weight:bold;color:white;transition:0.3s;}
+button{width:200px;padding:1rem;font-size:1.6rem;border-radius:15px;border:none;cursor:pointer;font-weight:bold;color:white;}
 .verde{background:linear-gradient(to bottom,#1f7a3a,#0f4f23);}
-.amarillo{background:#f2c200 !important;color:black;}
-.gris{background:#999 !important;color:#555 !important;cursor:not-allowed;}
+.amarillo{background:#f2c200!important;color:black;}
+.gris{background:#999!important;color:#555!important;cursor:not-allowed;}
 </style>
 </head>
 <body>
 <div class="cuadro">
 <h2>Apertura de Puertas</h2>
+
 <div class="fecha-hora">
-Apartamento: <span id="apartamento"></span> <span id="estadoApartamento" style="font-weight:bold;"></span>
+Apartamento: <span id="apartamento"></span>
+<span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
+
 <div class="fecha-hora fecha-hora-combinada">
-<span>Inicio:</span> <span id="fechaInicio"></span> <span id="horaInicio"></span>
-<span>Fin:</span> <span id="fechaFin"></span> <span id="horaFin"></span>
+<span>Inicio:</span><span id="fechaInicio"></span><span id="horaInicio"></span>
+<span>Fin:</span><span id="fechaFin"></span><span id="horaFin"></span>
 </div>
+
 <div class="panel portal">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
 <div class="estadoPuerta" id="estadoPortal"></div>
 <div class="botones">
-<button id="abrir" class="verde">Abrir Puerta Portal</button>
+<button id="abrir">Abrir Puerta Portal</button>
 </div>
 </div>
+
 <div class="panel apto">
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
 <div class="estadoPuerta" id="estadoApto"></div>
 <div class="botones">
-<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+<button id="abrirApto">Abrir Puerta Apartamento</button>
 </div>
 </div>
+
 <div class="panel luces" id="panelLuces" style="display:none;">
 <div style="font-size:2.5rem;font-weight:bold;">Luces</div>
 <div class="botones" id="botonesLuces"></div>
 </div>
+
 </div>
 
 <script>
 // -------- MQTT --------
-const broker = 'wss://broker.hivemq.com:8884/mqtt';
-const client = mqtt.connect(broker);
-function enviarMQTT(topic, accion){const mensaje={id:Date.now(),accion:accion};client.publish(topic,JSON.stringify(mensaje),{qos:1});}
+const broker='wss://broker.hivemq.com:8884/mqtt';
+const client=mqtt.connect(broker);
+function enviarMQTT(topic,accion){
+ const mensaje={id:Date.now(),accion:accion};
+ client.publish(topic,JSON.stringify(mensaje),{qos:1});
+}
 
 // -------- PARÁMETROS --------
-const params = new URLSearchParams(window.location.search);
-const fe = params.get('fe'); const he = params.get('he');
-const fs = params.get('fs'); const hs = params.get('hs');
-const a = Math.min(Math.max(parseInt(params.get('a')),1),100) || 1;
-const cp = params.get('cp')==='1';
-const ca = params.get('ca')==='1';
-const l = parseInt(params.get('l'))||0;
+const params=new URLSearchParams(window.location.search);
+const fe=params.get('fe'),he=params.get('he');
+const fs=params.get('fs'),hs=params.get('hs');
+const a=Math.min(Math.max(parseInt(params.get('a')),1),100)||1;
+const cp=params.get('cp')==='1';
+const ca=params.get('ca')==='1';
+const l=parseInt(params.get('l'))||0;
 
 // -------- ELEMENTOS --------
-const btnAbrir = document.getElementById('abrir');
-const btnAbrirApto = document.getElementById('abrirApto');
-const estadoPortal = document.getElementById('estadoPortal');
-const estadoApto = document.getElementById('estadoApto');
-const estadoApartamento = document.getElementById('estadoApartamento');
-const panelLuces = document.getElementById('panelLuces');
-const botonesLuces = document.getElementById('botonesLuces');
-let botonesLuz = [];
+const btnPortal=document.getElementById('abrir');
+const btnApto=document.getElementById('abrirApto');
+const estadoPortal=document.getElementById('estadoPortal');
+const estadoApto=document.getElementById('estadoApto');
+const estadoApartamento=document.getElementById('estadoApartamento');
+const panelLuces=document.getElementById('panelLuces');
+const botonesLuces=document.getElementById('botonesLuces');
+let botonesLuz=[];
 let primeraVez=true;
 
-// -------- FORMATEO FECHA --------
-function formatearFechaHora(f,h){return {fecha:f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),hora:h.slice(0,2)+':'+h.slice(2,4)};}
-const inicio = formatearFechaHora(fe,he);
-const fin = formatearFechaHora(fs,hs);
-document.getElementById('apartamento').textContent = a;
-document.getElementById('fechaInicio').textContent = inicio.fecha;
-document.getElementById('horaInicio').textContent = inicio.hora;
-document.getElementById('fechaFin').textContent = fin.fecha;
-document.getElementById('horaFin').textContent = fin.hora;
+// -------- FORMATO FECHA --------
+function formatear(f,h){
+ return {fecha:f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
+         hora:h.slice(0,2)+':'+h.slice(2,4)};
+}
+const inicio=formatear(fe,he);
+const fin=formatear(fs,hs);
 
-// -------- CARGAR ESTADO LOCAL --------
-const keyEstado = `estado_apto${a}`;
-let estadoGuardado = JSON.parse(localStorage.getItem(keyEstado)) || {portal:"verde",apto:"verde",luces:[]};
+document.getElementById('apartamento').textContent=a;
+document.getElementById('fechaInicio').textContent=inicio.fecha;
+document.getElementById('horaInicio').textContent=inicio.hora;
+document.getElementById('fechaFin').textContent=fin.fecha;
+document.getElementById('horaFin').textContent=fin.hora;
 
-// -------- CREAR BOTONES LUCES --------
+// -------- LOCAL STORAGE --------
+const key=`estado_apto_${a}`;
+let estado=JSON.parse(localStorage.getItem(key))||{portal:"verde",apto:"verde",luces:[]};
+
+// -------- CREAR LUCES --------
 if(l>0){
-  panelLuces.style.display='block';
-  for(let i=1;i<=l;i++){
-    const btn=document.createElement('button');
-    btn.dataset.index=i;
-    let estadoBtn = estadoGuardado.luces[i-1] || "verde";
-    btn.classList.add(estadoBtn);
-    btn.textContent = estadoBtn==="amarillo"?`Apagar Luz ${i}`:`Encender Luz ${i}`;
-    botonesLuces.appendChild(btn);
-    botonesLuz.push(btn);
-    btn.addEventListener('click',()=>{
-      if(btn.disabled) return;
-      if(btn.classList.contains('amarillo')){
-        btn.classList.remove('amarillo'); btn.classList.add('verde');
-        btn.textContent = `Encender Luz ${i}`; estadoGuardado.luces[i-1]="verde";
-        enviarMQTT(`apartamento${a}/luz${i}`,'off');
-      }else{
-        btn.classList.remove('verde'); btn.classList.add('amarillo');
-        btn.textContent = `Apagar Luz ${i}`; estadoGuardado.luces[i-1]="amarillo";
-        enviarMQTT(`apartamento${a}/luz${i}`,'on');
-      }
-      localStorage.setItem(keyEstado,JSON.stringify(estadoGuardado));
-    });
-  }
+ panelLuces.style.display='block';
+ for(let i=1;i<=l;i++){
+   const btn=document.createElement('button');
+   botonesLuces.appendChild(btn);
+   botonesLuz.push(btn);
+
+   btn.addEventListener('click',()=>{
+     if(btn.disabled) return;
+     if(btn.classList.contains('amarillo')){
+       btn.className='verde';
+       btn.textContent=`Encender Luz ${i}`;
+       estado.luces[i-1]="verde";
+       enviarMQTT(`apartamento${a}/luz${i}`,'off');
+     }else{
+       btn.className='amarillo';
+       btn.textContent=`Apagar Luz ${i}`;
+       estado.luces[i-1]="amarillo";
+       enviarMQTT(`apartamento${a}/luz${i}`,'on');
+     }
+     localStorage.setItem(key,JSON.stringify(estado));
+   });
+ }
 }
 
-// -------- VALIDACIÓN ACCESO --------
-function validarAcceso(){
-  const ahora=new Date();
-  const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = (ahora>=fIni && ahora<=fFin);
+// -------- VALIDACIÓN --------
+function validar(){
+ const ahora=new Date();
+ const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
+ const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
+ const dentro=(ahora>=fIni && ahora<=fFin);
 
-  if(!acceso){
-    // Fuera de horario
-    btnAbrir.disabled = true; btnAbrir.className="gris"; btnAbrir.textContent="Abrir Puerta Portal";
-    btnAbrirApto.disabled = true; btnAbrirApto.className="gris"; btnAbrirApto.textContent="Abrir Puerta Apartamento";
-    if(l>0){botonesLuz.forEach((b,i)=>{b.disabled=true;b.className="gris";b.textContent=`Encender Luz ${i+1}`;});}
-    estadoPortal.textContent="INACTIVO"; estadoPortal.style.color="#b30000";
-    estadoApto.textContent="INACTIVO"; estadoApto.style.color="#b30000";
-    estadoApartamento.textContent="Fuera de horario"; estadoApartamento.style.color="#b30000";
-    return;
-  }
+ if(!dentro){
+   btnPortal.disabled=true;btnPortal.className='gris';btnPortal.textContent="Abrir Puerta Portal";
+   btnApto.disabled=true;btnApto.className='gris';btnApto.textContent="Abrir Puerta Apartamento";
+   botonesLuz.forEach((b,i)=>{b.disabled=true;b.className='gris';b.textContent=`Encender Luz ${i+1}`;});
+   estadoApartamento.textContent="Fuera de horario";estadoApartamento.style.color="#b30000";
+   estadoPortal.textContent="INACTIVO";estadoPortal.style.color="#b30000";
+   estadoApto.textContent="INACTIVO";estadoApto.style.color="#b30000";
+   return;
+ }
 
-  // Dentro de horario
-  let portalEstado = primeraVez ? (cp?"verde":"gris") : estadoGuardado.portal;
-  let aptoEstado = primeraVez ? (ca?"verde":"gris") : estadoGuardado.apto;
-  btnAbrir.disabled = portalEstado==="gris"; btnAbrir.className=portalEstado; btnAbrir.textContent = portalEstado==="amarillo"?"Empuje la Puerta":"Abrir Puerta Portal";
-  btnAbrirApto.disabled = aptoEstado==="gris"; btnAbrirApto.className=aptoEstado; btnAbrirApto.textContent = aptoEstado==="amarillo"?"Empuje la Puerta":"Abrir Puerta Apartamento";
+ // DENTRO DE HORARIO
+ let portalEstado=primeraVez?(cp?'verde':'gris'):estado.portal;
+ let aptoEstado=primeraVez?(ca?'verde':'gris'):estado.apto;
 
-  if(l>0){
-    botonesLuz.forEach((b,i)=>{
-      let estadoLuz = primeraVez ? (aptoEstado==="verde"?"verde":"gris") : (estadoGuardado.luces[i]||"verde");
-      b.disabled = estadoLuz==="gris"?true:false;
-      b.className = estadoLuz;
-      b.textContent = estadoLuz==="amarillo"?`Apagar Luz ${i+1}`:`Encender Luz ${i+1}`;
-    });
-  }
+ btnPortal.disabled=(portalEstado==='gris');
+ btnPortal.className=portalEstado;
+ btnPortal.textContent=portalEstado==='amarillo'?"Empuje la Puerta":"Abrir Puerta Portal";
 
-  primeraVez=false;
-  estadoPortal.textContent = portalEstado!=="gris"?"ACTIVO":"INACTIVO"; estadoPortal.style.color = portalEstado!=="gris"?"#0b7a2a":"#b30000";
-  estadoApto.textContent = aptoEstado!=="gris"?"ACTIVO":"INACTIVO"; estadoApto.style.color = aptoEstado!=="gris"?"#0b7a2a":"#b30000";
-  estadoApartamento.textContent="Activo"; estadoApartamento.style.color="#0b7a2a";
+ btnApto.disabled=(aptoEstado==='gris');
+ btnApto.className=aptoEstado;
+ btnApto.textContent=aptoEstado==='amarillo'?"Empuje la Puerta":"Abrir Puerta Apartamento";
+
+ botonesLuz.forEach((b,i)=>{
+   let luzEstado;
+   if(primeraVez){
+     luzEstado=(ca?'verde':'gris');
+   }else{
+     luzEstado=estado.luces[i]||'verde';
+   }
+   b.disabled=(luzEstado==='gris');
+   b.className=luzEstado;
+   b.textContent=luzEstado==='amarillo'?`Apagar Luz ${i+1}`:`Encender Luz ${i+1}`;
+ });
+
+ primeraVez=false;
+
+ estadoApartamento.textContent="Activo";estadoApartamento.style.color="#0b7a2a";
+ estadoPortal.textContent=(portalEstado!=='gris')?'ACTIVO':'INACTIVO';
+ estadoPortal.style.color=(portalEstado!=='gris')?'#0b7a2a':'#b30000';
+ estadoApto.textContent=(aptoEstado!=='gris')?'ACTIVO':'INACTIVO';
+ estadoApto.style.color=(aptoEstado!=='gris')?'#0b7a2a':'#b30000';
 }
-setInterval(validarAcceso,60000);
-validarAcceso();
+setInterval(validar,60000);
+validar();
 
-// -------- EVENTOS PORTAL/APTO --------
-btnAbrir.addEventListener('click',()=>{
-  if(btnAbrir.disabled) return;
-  btnAbrir.classList.remove('verde'); btnAbrir.classList.add('amarillo'); btnAbrir.textContent="Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/portal`,'abrir');
-  estadoGuardado.portal="amarillo"; localStorage.setItem(keyEstado,JSON.stringify(estadoGuardado));
-  setTimeout(()=>{if(!btnAbrir.disabled){btnAbrir.classList.remove('amarillo');btnAbrir.classList.add('verde');btnAbrir.textContent="Abrir Puerta Portal";estadoGuardado.portal="verde";localStorage.setItem(keyEstado,JSON.stringify(estadoGuardado));}},3000);
+// -------- EVENTOS PUERTAS --------
+btnPortal.addEventListener('click',()=>{
+ if(btnPortal.disabled) return;
+ btnPortal.className='amarillo';
+ btnPortal.textContent="Empuje la Puerta";
+ estado.portal='amarillo';
+ localStorage.setItem(key,JSON.stringify(estado));
+ enviarMQTT(`apartamento${a}/portal`,'abrir');
+ setTimeout(()=>{
+   if(!btnPortal.disabled){
+     btnPortal.className='verde';
+     btnPortal.textContent="Abrir Puerta Portal";
+     estado.portal='verde';
+     localStorage.setItem(key,JSON.stringify(estado));
+   }
+ },3000);
 });
-btnAbrirApto.addEventListener('click',()=>{
-  if(btnAbrirApto.disabled) return;
-  btnAbrirApto.classList.remove('verde'); btnAbrirApto.classList.add('amarillo'); btnAbrirApto.textContent="Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/apto`,'abrir');
-  estadoGuardado.apto="amarillo"; localStorage.setItem(keyEstado,JSON.stringify(estadoGuardado));
-  setTimeout(()=>{if(!btnAbrirApto.disabled){btnAbrirApto.classList.remove('amarillo');btnAbrirApto.classList.add('verde');btnAbrirApto.textContent="Abrir Puerta Apartamento";estadoGuardado.apto="verde";localStorage.setItem(keyEstado,JSON.stringify(estadoGuardado));}},3000);
+
+btnApto.addEventListener('click',()=>{
+ if(btnApto.disabled) return;
+ btnApto.className='amarillo';
+ btnApto.textContent="Empuje la Puerta";
+ estado.apto='amarillo';
+ localStorage.setItem(key,JSON.stringify(estado));
+ enviarMQTT(`apartamento${a}/apto`,'abrir');
+ setTimeout(()=>{
+   if(!btnApto.disabled){
+     btnApto.className='verde';
+     btnApto.textContent="Abrir Puerta Apartamento";
+     estado.apto='verde';
+     localStorage.setItem(key,JSON.stringify(estado));
+   }
+ },3000);
 });
 </script>
 </body>
