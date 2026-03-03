@@ -1,14 +1,13 @@
 <script>
+window.addEventListener("DOMContentLoaded", function(){
+
 // Parámetros del link
 const params = new URLSearchParams(window.location.search);
 
-const k = params.get('k');     
-const m = params.get('m');     
-const fa = params.get('fa');   
-const fe = params.get('fe');   
-const he = params.get('he');   
-const fs = params.get('fs');   
-const hs = params.get('hs');   
+const fe = params.get('fe');
+const he = params.get('he');
+const fs = params.get('fs');
+const hs = params.get('hs');
 const a = Math.min(Math.max(parseInt(params.get('a')),1),100) || 1;
 const cp = params.get('cp')==='1'; 
 const ca = params.get('ca')==='1'; 
@@ -20,13 +19,13 @@ const btnAbrirApto = document.getElementById('abrirApto');
 const estadoApartamento = document.getElementById('estadoApartamento');
 const estadoPortal = document.getElementById('estadoPortal');
 const estadoApto = document.getElementById('estadoApto');
-
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
 const estadoLuces = document.getElementById('estadoLuces');
 
-// Formateo de fecha y hora
+// Formateo seguro
 function formatearFechaHora(f,h){
+  if(!f || !h) return {fecha:"----", hora:"--:--"};
   return {
     fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
     hora: h.slice(0,2)+':'+h.slice(2,4)
@@ -36,16 +35,23 @@ function formatearFechaHora(f,h){
 const inicio = formatearFechaHora(fe, he);
 const fin = formatearFechaHora(fs, hs);
 
-// Mostrar datos
-document.getElementById('apartamento').textContent = a;
-document.getElementById('fechaInicio').textContent = inicio.fecha;
-document.getElementById('horaInicio').textContent = inicio.hora;
-document.getElementById('fechaFin').textContent = fin.fecha;
-document.getElementById('horaFin').textContent = fin.hora;
+// Mostrar datos (protegido)
+const elApartamento = document.getElementById('apartamento');
+const elFechaInicio = document.getElementById('fechaInicio');
+const elHoraInicio = document.getElementById('horaInicio');
+const elFechaFin = document.getElementById('fechaFin');
+const elHoraFin = document.getElementById('horaFin');
 
-// Crear botones de luces según L
+if(elApartamento) elApartamento.textContent = a;
+if(elFechaInicio) elFechaInicio.textContent = inicio.fecha;
+if(elHoraInicio) elHoraInicio.textContent = inicio.hora;
+if(elFechaFin) elFechaFin.textContent = fin.fecha;
+if(elHoraFin) elHoraFin.textContent = fin.hora;
+
+// Crear botones de luces
 let botonesLuz = [];
-if(l>0){
+
+if(l>0 && panelLuces && botonesLuces){
   panelLuces.style.display = 'block';
   for(let i=1; i<=l; i++){
     const btn = document.createElement('button');
@@ -57,33 +63,56 @@ if(l>0){
   }
 }
 
-// Función de validación
+// Validación
 function validarAcceso(){
+
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = (ahora >= fIni && ahora <= fFin);
 
-  btnAbrir.disabled = !(acceso && cp);
-  btnAbrirApto.disabled = !(acceso && ca);
+  // Portal
+  if(btnAbrir){
+    btnAbrir.disabled = !(acceso && cp);
+  }
 
-  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
-  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
+  // Apartamento
+  if(btnAbrirApto){
+    btnAbrirApto.disabled = !(acceso && ca);
+  }
 
-  estadoPortal.textContent = (acceso && cp) ? 'ACTIVO' : 'INACTIVO';
-  estadoPortal.style.color = (acceso && cp) ? '#0b7a2a' : '#b30000';
+  if(estadoApartamento){
+    estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+    estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
+  }
 
-  estadoApto.textContent = (acceso && ca) ? 'ACTIVO' : 'INACTIVO';
-  estadoApto.style.color = (acceso && ca) ? '#0b7a2a' : '#b30000';
+  if(estadoPortal){
+    estadoPortal.textContent = (acceso && cp) ? 'ACTIVO' : 'INACTIVO';
+    estadoPortal.style.color = (acceso && cp) ? '#0b7a2a' : '#b30000';
+  }
 
+  if(estadoApto){
+    estadoApto.textContent = (acceso && ca) ? 'ACTIVO' : 'INACTIVO';
+    estadoApto.style.color = (acceso && ca) ? '#0b7a2a' : '#b30000';
+  }
+
+  // 🔒 LUCES DEPENDEN DEL APARTAMENTO
   if(l>0){
-    const aptoActivo = acceso && ca; // La puerta del apartamento debe estar activa
-    estadoLuces.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
-    estadoLuces.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
-    botonesLuz.forEach(b => b.disabled = !aptoActivo);
+    const apartamentoActivo = acceso && ca;
+
+    if(estadoLuces){
+      estadoLuces.textContent = apartamentoActivo ? 'ACTIVO' : 'INACTIVO';
+      estadoLuces.style.color = apartamentoActivo ? '#0b7a2a' : '#b30000';
+    }
+
+    botonesLuz.forEach(btn=>{
+      btn.disabled = !apartamentoActivo;
+    });
   }
 }
 
 validarAcceso();
 setInterval(validarAcceso,60000);
+
+});
 </script>
