@@ -122,17 +122,10 @@ Apartamento:
 
 <script>
 
-// -------- MQTT CONFIG --------
 const broker = 'wss://broker.hivemq.com:8884/mqtt';
 const client = mqtt.connect(broker);
-client.on('connect', ()=> console.log("MQTT conectado"));
 
-function enviarMQTT(topic, accion){
-  const mensaje = { id: Date.now(), accion: accion };
-  client.publish(topic, JSON.stringify(mensaje), {qos:1});
-}
-
-// -------- PARÁMETROS --------
+// Parámetros
 const params = new URLSearchParams(window.location.search);
 const fe = params.get('fe');
 const he = params.get('he');
@@ -143,56 +136,44 @@ const cp = params.get('cp')==='1';
 const ca = params.get('ca')==='1';
 const l = parseInt(params.get('l'))||0;
 
-// -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
 const btnAbrirApto = document.getElementById('abrirApto');
+const estadoPortal = document.getElementById('estadoPortal');
+const estadoApto = document.getElementById('estadoApto');
+const estadoApartamento = document.getElementById('estadoApartamento');
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
 
-// -------- FECHAS --------
-function formatearFechaHora(f,h){
-  return {
-    fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
-    hora: h.slice(0,2)+':'+h.slice(2,4)
-  };
-}
-
-const inicio = formatearFechaHora(fe, he);
-const fin = formatearFechaHora(fs, hs);
-
 document.getElementById('apartamento').textContent = a;
-document.getElementById('fechaInicio').textContent = inicio.fecha;
-document.getElementById('horaInicio').textContent = inicio.hora;
-document.getElementById('fechaFin').textContent = fin.fecha;
-document.getElementById('horaFin').textContent = fin.hora;
 
-// -------- CREAR LUCES --------
 if(l>0){
   panelLuces.style.display='block';
   for(let i=1;i<=l;i++){
     const btn = document.createElement('button');
-    btn.textContent = 'Punto '+i;
+    btn.textContent='Punto '+i;
     botonesLuces.appendChild(btn);
   }
 }
 
-// -------- VALIDACIÓN HORARIA --------
 function dentroDeHorario(){
-  const ahora = new Date();
-  const actual =
-    ahora.getFullYear().toString() +
-    String(ahora.getMonth()+1).padStart(2,'0') +
-    String(ahora.getDate()).padStart(2,'0') +
-    String(ahora.getHours()).padStart(2,'0') +
+  const ahora=new Date();
+  const actual=
+    ahora.getFullYear().toString()+
+    String(ahora.getMonth()+1).padStart(2,'0')+
+    String(ahora.getDate()).padStart(2,'0')+
+    String(ahora.getHours()).padStart(2,'0')+
     String(ahora.getMinutes()).padStart(2,'0');
-
   return actual >= (fe+he) && actual <= (fs+hs);
 }
 
-// -------- CONTROL ESTADO INICIAL Y CADA MINUTO --------
 function actualizarEstado(){
 
   if(!dentroDeHorario()){
+
+    estadoApartamento.textContent="Fuera de fechas";
+    estadoPortal.textContent="Inactivo";
+    estadoApto.textContent="Inactivo";
+
     btnAbrir.className='gris';
     btnAbrir.disabled=true;
 
@@ -206,18 +187,24 @@ function actualizarEstado(){
 
   }else{
 
+    estadoApartamento.textContent="Activo";
+
     if(cp){
+      estadoPortal.textContent="Activo";
       btnAbrir.className='verde';
       btnAbrir.disabled=false;
     }else{
+      estadoPortal.textContent="Inactivo";
       btnAbrir.className='gris';
       btnAbrir.disabled=true;
     }
 
     if(ca){
+      estadoApto.textContent="Activo";
       btnAbrirApto.className='verde';
       btnAbrirApto.disabled=false;
     }else{
+      estadoApto.textContent="Inactivo";
       btnAbrirApto.className='gris';
       btnAbrirApto.disabled=true;
     }
@@ -234,10 +221,7 @@ function actualizarEstado(){
   }
 }
 
-// Ejecutar al abrir
 actualizarEstado();
-
-// Actualizar cada minuto
 setInterval(actualizarEstado,60000);
 
 </script>
