@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Apertura de Puertas</title>
-
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
@@ -16,7 +15,6 @@ body{
   margin:0;
   padding-top:20px;
 }
-
 .cuadro{
   background:white;
   padding:3rem;
@@ -26,9 +24,7 @@ body{
   width:98%;
   max-width:750px;
 }
-
 h2{ font-size:4.5rem; margin-bottom:1rem; }
-
 .fecha-hora{
   display:flex;
   font-size:2.5rem;
@@ -36,31 +32,26 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   justify-content:center;
   gap:1rem;
 }
-
 .fecha-hora-combinada{
   display:grid;
   grid-template-columns: 140px 220px 120px;
   row-gap:0.5rem;
   font-size:2.5rem;
 }
-
 .panel{
   border-radius:15px;
   padding:1.5rem;
   margin-bottom:2rem;
   box-shadow:0 8px 18px rgba(0,0,0,0.25);
 }
-
 .panel.portal{ background:#e3f5ea; border:3px solid #145c2c; }
 .panel.apto{ background:#e8edff; border:3px solid #1a3f9e; }
 .panel.luces{ background:#fff3e6; border:3px solid #b36000; }
-
 .estadoPuerta{
   font-weight:bold;
   font-size:1.8rem;
   margin-bottom:1rem;
 }
-
 .botones{
   display:flex;
   justify-content:center;
@@ -68,7 +59,6 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   gap:1rem;
   margin-top:1rem;
 }
-
 button{
   width:180px;
   padding:1rem 0.5rem;
@@ -80,11 +70,9 @@ button{
   color:white;
   transition:0.3s;
 }
-
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
-
 </style>
 </head>
 
@@ -103,7 +91,6 @@ Apartamento:
 <span>Inicio:</span>
 <span id="fechaInicio"></span>
 <span id="horaInicio"></span>
-
 <span>Fin:</span>
 <span id="fechaFin"></span>
 <span id="horaFin"></span>
@@ -135,7 +122,7 @@ Apartamento:
 
 <script>
 
-// MQTT
+// -------- MQTT CONFIG --------
 const broker = 'wss://broker.hivemq.com:8884/mqtt';
 const client = mqtt.connect(broker);
 client.on('connect', ()=> console.log("MQTT conectado"));
@@ -145,7 +132,7 @@ function enviarMQTT(topic, accion){
   client.publish(topic, JSON.stringify(mensaje), {qos:1});
 }
 
-// Parámetros
+// -------- PARÁMETROS --------
 const params = new URLSearchParams(window.location.search);
 const fe = params.get('fe');
 const he = params.get('he');
@@ -156,17 +143,13 @@ const cp = params.get('cp')==='1';
 const ca = params.get('ca')==='1';
 const l = parseInt(params.get('l'))||0;
 
-// Elementos
+// -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
 const btnAbrirApto = document.getElementById('abrirApto');
-const estadoPortal = document.getElementById('estadoPortal');
-const estadoApto = document.getElementById('estadoApto');
-const estadoApartamento = document.getElementById('estadoApartamento');
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
-const estadoLuces = document.getElementById('estadoLuces');
 
-// Fechas
+// -------- FECHAS --------
 function formatearFechaHora(f,h){
   return {
     fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
@@ -183,38 +166,9 @@ document.getElementById('horaInicio').textContent = inicio.hora;
 document.getElementById('fechaFin').textContent = fin.fecha;
 document.getElementById('horaFin').textContent = fin.hora;
 
-// -------- LÓGICA NUEVA --------
-
-function dentroDeHorario(){
-  const ahora = new Date();
-  const actual = ahora.getFullYear().toString() +
-    String(ahora.getMonth()+1).padStart(2,'0') +
-    String(ahora.getDate()).padStart(2,'0') +
-    String(ahora.getHours()).padStart(2,'0') +
-    String(ahora.getMinutes()).padStart(2,'0');
-
-  const inicioNum = fe + he;
-  const finNum = fs + hs;
-
-  return actual >= inicioNum && actual <= finNum;
-}
-
-function ponerGris(boton){
-  boton.classList.remove('verde','amarillo');
-  boton.classList.add('gris');
-  boton.disabled = true;
-}
-
-function ponerVerde(boton){
-  boton.classList.remove('gris');
-  boton.classList.add('verde');
-  boton.disabled = false;
-}
-
-// Crear luces
+// -------- CREAR LUCES --------
 if(l>0){
   panelLuces.style.display='block';
-
   for(let i=1;i<=l;i++){
     const btn = document.createElement('button');
     btn.textContent = 'Punto '+i;
@@ -222,23 +176,69 @@ if(l>0){
   }
 }
 
-if(!dentroDeHorario()){
+// -------- VALIDACIÓN HORARIA --------
+function dentroDeHorario(){
+  const ahora = new Date();
+  const actual =
+    ahora.getFullYear().toString() +
+    String(ahora.getMonth()+1).padStart(2,'0') +
+    String(ahora.getDate()).padStart(2,'0') +
+    String(ahora.getHours()).padStart(2,'0') +
+    String(ahora.getMinutes()).padStart(2,'0');
 
-  ponerGris(btnAbrir);
-  ponerGris(btnAbrirApto);
-  Array.from(botonesLuces.children).forEach(b=>ponerGris(b));
-
-}else{
-
-  if(cp) ponerVerde(btnAbrir); else ponerGris(btnAbrir);
-  if(ca) ponerVerde(btnAbrirApto); else ponerGris(btnAbrirApto);
-
-  Array.from(botonesLuces.children).forEach(b=>{
-    if(ca) ponerVerde(b);
-    else ponerGris(b);
-  });
-
+  return actual >= (fe+he) && actual <= (fs+hs);
 }
+
+// -------- CONTROL ESTADO INICIAL Y CADA MINUTO --------
+function actualizarEstado(){
+
+  if(!dentroDeHorario()){
+    btnAbrir.className='gris';
+    btnAbrir.disabled=true;
+
+    btnAbrirApto.className='gris';
+    btnAbrirApto.disabled=true;
+
+    Array.from(botonesLuces.children).forEach(b=>{
+      b.className='gris';
+      b.disabled=true;
+    });
+
+  }else{
+
+    if(cp){
+      btnAbrir.className='verde';
+      btnAbrir.disabled=false;
+    }else{
+      btnAbrir.className='gris';
+      btnAbrir.disabled=true;
+    }
+
+    if(ca){
+      btnAbrirApto.className='verde';
+      btnAbrirApto.disabled=false;
+    }else{
+      btnAbrirApto.className='gris';
+      btnAbrirApto.disabled=true;
+    }
+
+    Array.from(botonesLuces.children).forEach(b=>{
+      if(ca){
+        b.className='verde';
+        b.disabled=false;
+      }else{
+        b.className='gris';
+        b.disabled=true;
+      }
+    });
+  }
+}
+
+// Ejecutar al abrir
+actualizarEstado();
+
+// Actualizar cada minuto
+setInterval(actualizarEstado,60000);
 
 </script>
 </body>
