@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Apertura de Puertas</title>
+
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
@@ -15,6 +16,7 @@ body{
   margin:0;
   padding-top:20px;
 }
+
 .cuadro{
   background:white;
   padding:3rem;
@@ -24,6 +26,7 @@ body{
   width:98%;
   max-width:750px;
 }
+
 h2{ font-size:4.5rem; margin-bottom:1rem; }
 
 .fecha-hora{
@@ -78,57 +81,71 @@ button{
   transition:0.3s;
 }
 
+/* Estados */
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
+
 </style>
 </head>
 
 <body>
-
 <div class="cuadro">
 
 <h2>Apertura de Puertas</h2>
 
 <div class="fecha-hora">
-  Apartamento: <span id="apartamento"></span>
-  <span id="estadoApartamento" style="font-weight:bold;"></span>
+Apartamento:
+<span id="apartamento"></span>
+<span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
 <div class="fecha-hora fecha-hora-combinada">
-  <span>Inicio:</span>
-  <span id="fechaInicio"></span>
-  <span id="horaInicio"></span>
-  <span>Fin:</span>
-  <span id="fechaFin"></span>
-  <span id="horaFin"></span>
+<span>Inicio:</span>
+<span id="fechaInicio"></span>
+<span id="horaInicio"></span>
+
+<span>Fin:</span>
+<span id="fechaFin"></span>
+<span id="horaFin"></span>
 </div>
 
 <div class="panel portal">
-  <div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
-  <div class="estadoPuerta" id="estadoPortal"></div>
-  <div class="botones">
-    <button id="abrir" class="verde">Abrir</button>
-  </div>
+<div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
+<div class="estadoPuerta" id="estadoPortal"></div>
+<div class="botones">
+<button id="abrir" class="verde">Abrir</button>
+</div>
 </div>
 
 <div class="panel apto">
-  <div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
-  <div class="estadoPuerta" id="estadoApto"></div>
-  <div class="botones">
-    <button id="abrirApto" class="verde">Abrir</button>
-  </div>
+<div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
+<div class="estadoPuerta" id="estadoApto"></div>
+<div class="botones">
+<button id="abrirApto" class="verde">Abrir</button>
+</div>
 </div>
 
 <div class="panel luces" id="panelLuces" style="display:none;">
-  <div style="font-size:2.5rem;font-weight:bold;">Luces</div>
-  <div class="estadoPuerta" id="estadoLuces"></div>
-  <div class="botones" id="botonesLuces"></div>
+<div style="font-size:2.5rem;font-weight:bold;">Luces</div>
+<div class="estadoPuerta" id="estadoLuces"></div>
+<div class="botones" id="botonesLuces"></div>
 </div>
 
 </div>
 
 <script>
+
+// -------- MQTT CONFIG --------
+const broker = 'wss://broker.hivemq.com:8884/mqtt'; // Cambia si usas otro
+const client = mqtt.connect(broker);
+
+client.on('connect', ()=> console.log("MQTT conectado"));
+
+function enviarMQTT(topic, accion){
+  const mensaje = { id: Date.now(), accion: accion };
+  client.publish(topic, JSON.stringify(mensaje), {qos:1});
+}
 
 // -------- PARÁMETROS --------
 const params = new URLSearchParams(window.location.search);
@@ -168,97 +185,110 @@ document.getElementById('horaInicio').textContent = inicio.hora;
 document.getElementById('fechaFin').textContent = fin.fecha;
 document.getElementById('horaFin').textContent = fin.hora;
 
-// -------- VALIDACIÓN FECHAS --------
-function dentroDeFechas(){
-  const ahora = new Date();
-  const inicioDate = new Date(inicio.fecha + "T" + inicio.hora);
-  const finDate = new Date(fin.fecha + "T" + fin.hora);
-  return ahora >= inicioDate && ahora <= finDate;
-}
+// -------- BOTONES LUCES --------
+let botonesLuz = [];
 
-// -------- CREAR LUCES --------
-if(l > 0){
-  panelLuces.style.display = "block";
+if(l>0){
+  panelLuces.style.display='block';
   for(let i=1;i<=l;i++){
-    const btn = document.createElement("button");
-    btn.textContent = "Punto " + i;
-    btn.className = "verde";
+    const btn=document.createElement('button');
+    btn.textContent='Punto '+i;
+    btn.classList.add('verde');
     botonesLuces.appendChild(btn);
-  }
-}
+    botonesLuz.push(btn);
 
-// -------- LÓGICA PRINCIPAL --------
-function aplicarEstado(){
+    btn.addEventListener('click', ()=>{
+      if(btn.disabled) return;
 
-  const activa = dentroDeFechas();
+      if(btn.classList.contains('amarillo')){
+        btn.classList.remove('amarillo');
+        btn.classList.add('verde');
+      }else{
+        btn.classList.remove('verde');
+        btn.classList.add('amarillo');
+      }
 
-  if(!activa){
-
-    estadoApartamento.textContent = "Fuera de fechas";
-    estadoPortal.textContent = "Inactivo";
-    estadoApto.textContent = "Inactivo";
-    estadoLuces.textContent = "Inactivo";
-
-    document.querySelectorAll("button").forEach(b=>{
-      b.classList.remove("verde","amarillo");
-      b.classList.add("gris");
-      b.disabled = true;
+      enviarMQTT(`apartamento${a}/luz${i}`, 'toggle');
     });
-
-  }else{
-
-    estadoApartamento.textContent = "Activo";
-
-    // PORTAL
-    if(cp){
-      estadoPortal.textContent = "Activo";
-      btnAbrir.classList.remove("gris");
-      btnAbrir.classList.add("verde");
-      btnAbrir.disabled = false;
-    }else{
-      estadoPortal.textContent = "Inactivo";
-      btnAbrir.classList.remove("verde");
-      btnAbrir.classList.add("gris");
-      btnAbrir.disabled = true;
-    }
-
-    // APARTAMENTO
-    if(ca){
-      estadoApto.textContent = "Activo";
-      btnAbrirApto.classList.remove("gris");
-      btnAbrirApto.classList.add("verde");
-      btnAbrirApto.disabled = false;
-
-      estadoLuces.textContent = "Activo";
-      document.querySelectorAll("#botonesLuces button").forEach(b=>{
-        b.classList.remove("gris");
-        b.classList.add("verde");
-        b.disabled = false;
-      });
-
-    }else{
-      estadoApto.textContent = "Inactivo";
-      btnAbrirApto.classList.remove("verde");
-      btnAbrirApto.classList.add("gris");
-      btnAbrirApto.disabled = true;
-
-      estadoLuces.textContent = "Inactivo";
-      document.querySelectorAll("#botonesLuces button").forEach(b=>{
-        b.classList.remove("verde");
-        b.classList.add("gris");
-        b.disabled = true;
-      });
-    }
-
   }
 }
 
-aplicarEstado();
+// -------- VALIDACIÓN --------
+function validarAcceso(){
 
-// -------- REFRESCO CADA MINUTO --------
-setInterval(()=> location.reload(), 60000);
+  const ahora=new Date();
+  const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
+
+  const acceso=(ahora>=fIni && ahora<=fFin);
+  const aptoActivo=acceso && ca;
+
+  // PORTAL
+  const portalActivo=acceso && cp;
+  btnAbrir.disabled=!portalActivo;
+  btnAbrir.classList.toggle('gris',!portalActivo);
+
+  // APTO
+  btnAbrirApto.disabled=!aptoActivo;
+  btnAbrirApto.classList.toggle('gris',!aptoActivo);
+
+  // LUCES
+  if(l>0){
+    botonesLuz.forEach(b=>{
+      b.disabled=!aptoActivo;
+      if(!aptoActivo){
+        b.classList.remove('amarillo','verde');
+        b.classList.add('gris');
+      }
+    });
+  }
+
+  estadoPortal.textContent=portalActivo?'ACTIVO':'INACTIVO';
+  estadoPortal.style.color=portalActivo?'#0b7a2a':'#b30000';
+
+  estadoApto.textContent=aptoActivo?'ACTIVO':'INACTIVO';
+  estadoApto.style.color=aptoActivo?'#0b7a2a':'#b30000';
+
+  estadoApartamento.textContent=acceso?'Activo':'Fuera de horario';
+  estadoApartamento.style.color=acceso?'#0b7a2a':'#b30000';
+}
+
+setInterval(validarAcceso,60000);
+validarAcceso();
+
+// -------- EVENTOS PORTAL/APTO --------
+btnAbrir.addEventListener('click',()=>{
+  if(btnAbrir.disabled) return;
+
+  btnAbrir.classList.remove('verde');
+  btnAbrir.classList.add('amarillo');
+
+  enviarMQTT(`apartamento${a}/portal`,'abrir');
+
+  setTimeout(()=>{
+    if(!btnAbrir.disabled){
+      btnAbrir.classList.remove('amarillo');
+      btnAbrir.classList.add('verde');
+    }
+  },3000);
+});
+
+btnAbrirApto.addEventListener('click',()=>{
+  if(btnAbrirApto.disabled) return;
+
+  btnAbrirApto.classList.remove('verde');
+  btnAbrirApto.classList.add('amarillo');
+
+  enviarMQTT(`apartamento${a}/apto`,'abrir');
+
+  setTimeout(()=>{
+    if(!btnAbrirApto.disabled){
+      btnAbrirApto.classList.remove('amarillo');
+      btnAbrirApto.classList.add('verde');
+    }
+  },3000);
+});
 
 </script>
-
 </body>
 </html>
