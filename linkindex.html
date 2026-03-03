@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -81,7 +81,6 @@ button{
   transition:0.3s;
 }
 
-/* Estados */
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
@@ -114,7 +113,7 @@ Apartamento:
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
 <div class="estadoPuerta" id="estadoPortal"></div>
 <div class="botones">
-<button id="abrir" class="verde">Abrir</button>
+<button id="abrir" class="verde">Abrir Puerta Portal</button>
 </div>
 </div>
 
@@ -122,13 +121,12 @@ Apartamento:
 <div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
 <div class="estadoPuerta" id="estadoApto"></div>
 <div class="botones">
-<button id="abrirApto" class="verde">Abrir</button>
+<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
 </div>
 </div>
 
 <div class="panel luces" id="panelLuces" style="display:none;">
 <div style="font-size:2.5rem;font-weight:bold;">Luces</div>
-<div class="estadoPuerta" id="estadoLuces"></div>
 <div class="botones" id="botonesLuces"></div>
 </div>
 
@@ -136,11 +134,9 @@ Apartamento:
 
 <script>
 
-// -------- MQTT CONFIG --------
-const broker = 'wss://broker.hivemq.com:8884/mqtt'; // Cambia si usas otro
+// -------- MQTT --------
+const broker = 'wss://broker.hivemq.com:8884/mqtt';
 const client = mqtt.connect(broker);
-
-client.on('connect', ()=> console.log("MQTT conectado"));
 
 function enviarMQTT(topic, accion){
   const mensaje = { id: Date.now(), accion: accion };
@@ -166,9 +162,11 @@ const estadoApto = document.getElementById('estadoApto');
 const estadoApartamento = document.getElementById('estadoApartamento');
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
-const estadoLuces = document.getElementById('estadoLuces');
 
-// -------- FECHAS --------
+let botonesLuz = [];
+let estadoAnteriorApto = null;
+
+// -------- FORMATEO FECHA --------
 function formatearFechaHora(f,h){
   return {
     fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
@@ -185,15 +183,14 @@ document.getElementById('horaInicio').textContent = inicio.hora;
 document.getElementById('fechaFin').textContent = fin.fecha;
 document.getElementById('horaFin').textContent = fin.hora;
 
-// -------- BOTONES LUCES --------
-let botonesLuz = [];
-
+// -------- CREAR BOTONES LUCES --------
 if(l>0){
   panelLuces.style.display='block';
   for(let i=1;i<=l;i++){
     const btn=document.createElement('button');
-    btn.textContent='Punto '+i;
+    btn.dataset.index=i;
     btn.classList.add('verde');
+    btn.textContent = `Encender Luz ${i}`;
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
 
@@ -203,54 +200,74 @@ if(l>0){
       if(btn.classList.contains('amarillo')){
         btn.classList.remove('amarillo');
         btn.classList.add('verde');
+        btn.textContent = `Encender Luz ${i}`;
+        enviarMQTT(`apartamento${a}/luz${i}`,'off');
       }else{
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
+        btn.textContent = `Apagar Luz ${i}`;
+        enviarMQTT(`apartamento${a}/luz${i}`,'on');
       }
-
-      enviarMQTT(`apartamento${a}/luz${i}`, 'toggle');
     });
   }
 }
 
 // -------- VALIDACIÓN --------
 function validarAcceso(){
-
   const ahora=new Date();
   const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
 
   const acceso=(ahora>=fIni && ahora<=fFin);
   const aptoActivo=acceso && ca;
+  const portalActivo=acceso && cp;
+
+  // Transición de activo -> inactivo
+  if(estadoAnteriorApto === true && aptoActivo === false){
+      if(l>0){
+        botonesLuz.forEach((b,index)=>{
+          enviarMQTT(`apartamento${a}/luz${index+1}`,'off');
+        });
+      }
+  }
+  estadoAnteriorApto = aptoActivo;
 
   // PORTAL
-  const portalActivo=acceso && cp;
-  btnAbrir.disabled=!portalActivo;
-  btnAbrir.classList.toggle('gris',!portalActivo);
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris', !portalActivo);
+  btnAbrir.textContent = btnAbrir.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Portal";
 
   // APTO
-  btnAbrirApto.disabled=!aptoActivo;
-  btnAbrirApto.classList.toggle('gris',!aptoActivo);
+  btnAbrirApto.disabled = !aptoActivo;
+  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+  btnAbrirApto.textContent = btnAbrirApto.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Apartamento";
 
   // LUCES
   if(l>0){
-    botonesLuz.forEach(b=>{
-      b.disabled=!aptoActivo;
+    botonesLuz.forEach((b,index)=>{
+      b.disabled = !aptoActivo;
       if(!aptoActivo){
         b.classList.remove('amarillo','verde');
         b.classList.add('gris');
+        b.textContent = `Encender Luz ${index+1}`;
+      } else {
+        if(!b.classList.contains('amarillo')) {
+          b.classList.remove('gris');
+          b.classList.add('verde');
+          b.textContent = `Encender Luz ${index+1}`;
+        }
       }
     });
   }
 
-  estadoPortal.textContent=portalActivo?'ACTIVO':'INACTIVO';
-  estadoPortal.style.color=portalActivo?'#0b7a2a':'#b30000';
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
 
-  estadoApto.textContent=aptoActivo?'ACTIVO':'INACTIVO';
-  estadoApto.style.color=aptoActivo?'#0b7a2a':'#b30000';
+  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
 
-  estadoApartamento.textContent=acceso?'Activo':'Fuera de horario';
-  estadoApartamento.style.color=acceso?'#0b7a2a':'#b30000';
+  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 }
 
 setInterval(validarAcceso,60000);
@@ -262,13 +279,14 @@ btnAbrir.addEventListener('click',()=>{
 
   btnAbrir.classList.remove('verde');
   btnAbrir.classList.add('amarillo');
-
+  btnAbrir.textContent = "Empuje la Puerta";
   enviarMQTT(`apartamento${a}/portal`,'abrir');
 
   setTimeout(()=>{
     if(!btnAbrir.disabled){
       btnAbrir.classList.remove('amarillo');
       btnAbrir.classList.add('verde');
+      btnAbrir.textContent = "Abrir Puerta Portal";
     }
   },3000);
 });
@@ -278,13 +296,14 @@ btnAbrirApto.addEventListener('click',()=>{
 
   btnAbrirApto.classList.remove('verde');
   btnAbrirApto.classList.add('amarillo');
-
+  btnAbrirApto.textContent = "Empuje la Puerta";
   enviarMQTT(`apartamento${a}/apto`,'abrir');
 
   setTimeout(()=>{
     if(!btnAbrirApto.disabled){
       btnAbrirApto.classList.remove('amarillo');
       btnAbrirApto.classList.add('verde');
+      btnAbrirApto.textContent = "Abrir Puerta Apartamento";
     }
   },3000);
 });
