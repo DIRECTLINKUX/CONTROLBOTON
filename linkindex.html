@@ -127,71 +127,50 @@ button{
 </div>
 
 <script>
-
-
+// -------- PARÁMETROS DESDE LA URL --------
+const params = new URLSearchParams(window.location.search);
+const a = Math.min(Math.max(parseInt(params.get('a')),1),100) || 1; // apartamento
+const fe = params.get('fe');  // fecha inicio
+const he = params.get('he');  // hora inicio
+const fs = params.get('fs');  // fecha fin
+const hs = params.get('hs');  // hora fin
+const cp = params.get('cp')==='1'; // check portal
+const ca = params.get('ca')==='1'; // check apartamento
+const l = parseInt(params.get('l'))||0; // nº luces
+const k = params.get('k'); // clave
+const fa = params.get('fa'); // fecha alta
+const m = params.get('m'); // mqtt
 
 // -------- MQTT --------
-
-// Leer parámetros de la URL
-const params = new URLSearchParams(window.location.search);
-const m = params.get('m');
-
-// Separar usuario, password y broker
 const partesMQTT = m.split('*');
-
 const username = partesMQTT[0];
 const password = partesMQTT[1];
 const broker = partesMQTT[2];
 
-// Conexión MQTT
-const client = mqtt.connect(broker, {
-  username: username,
-  password: password
-});
+const client = mqtt.connect(broker, { username, password });
 
-// Eventos de conexión
-client.on('connect', () => {
-  console.log("✅ Conectado a HiveMQ Cloud");
-});
-
-client.on('error', (err) => {
-  console.log("❌ Error MQTT:", err);
-});
+client.on('connect', () => console.log("✅ Conectado a HiveMQ Cloud"));
+client.on('error', err => console.log("❌ Error MQTT:", err));
 
 function enviarMQTT(topic, accion){
   const mensaje = {
     id: Date.now(),
-    accion: accion,
-    clave: params.get('k'),
+    accion,
+    clave: k,
     apartamento: a,
-    fechaAlta: params.get('fa'),
-    fechaEntrada: params.get('fe'),
-    horaEntrada: params.get('he'),
-    fechaFin: params.get('fs'),
-    horaFin: params.get('hs')
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs
   };
+  console.log("➡️ Enviando MQTT:", topic, mensaje);
 
- // Mostrar en consola el topic y el mensaje que se va a enviar
-  console.log("➡️ Enviando MQTT:", topic, JSON.stringify(mensaje));
-
-  client.publish(topic, JSON.stringify(mensaje), {qos:1});
+  client.publish(topic, JSON.stringify(mensaje), {qos:1}, (err)=>{
+    if(err) console.log("❌ Error al publicar:", err);
+    else console.log("✅ Publicado correctamente en:", topic);
+  });
 }
-
-
-
-
-
-
-// -------- PARÁMETROS --------
-const params = new URLSearchParams(window.location.search);
-const fe = params.get('fe');
-const he = params.get('he');
-const fs = params.get('fs');
-const hs = params.get('hs');
-const a = Math.min(Math.max(parseInt(params.get('a')),1),100) || 1;
-const cp = params.get('cp')==='1'; // check portal
-const ca = params.get('ca')==='1'; // check apartamento
-const l = parseInt(params.get('l'))||0;
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -210,7 +189,6 @@ function formatearFechaHora(f,h){
     hora: h.slice(0,2)+':'+h.slice(2,4)
   };
 }
-
 const inicio = formatearFechaHora(fe, he);
 const fin = formatearFechaHora(fs, hs);
 
@@ -234,13 +212,11 @@ if(l>0){
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
       if(btn.classList.contains('verde')){
-        btn.classList.remove('verde');
-        btn.classList.add('amarillo');
+        btn.classList.replace('verde','amarillo');
         btn.textContent = `Apagar\nLuz ${i}`;
         enviarMQTT(`apartamento${a}/luz${i}`, 'on');
       } else {
-        btn.classList.remove('amarillo');
-        btn.classList.add('verde');
+        btn.classList.replace('amarillo','verde');
         btn.textContent = `Encender\nLuz ${i}`;
         enviarMQTT(`apartamento${a}/luz${i}`, 'off');
       }
@@ -254,27 +230,22 @@ client.on('connect', ()=>{
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = (ahora >= fIni && ahora <= fFin);
-
-  if(!acceso) return; // fuera de fechas
+  if(!acceso) return;
 
   botonesLuz.forEach((btn,index)=>{
     const topic = `apartamento${a}/luz${index+1}`;
     client.subscribe(topic, {qos:1});
-
-    client.once('message', (t, message)=>{
+    client.once('message',(t,message)=>{
       if(t !== topic) return;
       const estado = message.toString();
-      if(estado === 'on'){
-        btn.classList.remove('verde');
-        btn.classList.add('amarillo');
+      if(estado==='on'){
+        btn.classList.replace('verde','amarillo');
         btn.textContent = `Apagar\nLuz ${index+1}`;
       } else {
-        btn.classList.remove('amarillo');
-        btn.classList.add('verde');
+        btn.classList.replace('amarillo','verde');
         btn.textContent = `Encender\nLuz ${index+1}`;
       }
     });
-
     enviarMQTT(topic, 'get');
   });
 });
@@ -298,7 +269,7 @@ function validarAcceso(){
   btnAbrirApto.classList.toggle('gris', !aptoActivo);
   btnAbrirApto.textContent = btnAbrirApto.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Apartamento";
 
-  // LUCES solo deshabilitar si fuera de acceso, sin cambiar color
+  // LUCES solo deshabilitar si fuera de acceso
   botonesLuz.forEach((b,index)=>{
     b.disabled = !aptoActivo;
     if(!aptoActivo){
@@ -310,29 +281,23 @@ function validarAcceso(){
 
   estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
   estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
-
   estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
   estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
-
   estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
   estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 }
-
-setInterval(validarAcceso, 60000);
+setInterval(validarAcceso,60000);
 validarAcceso();
 
 // -------- EVENTOS PORTAL/APTO --------
 btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
-  btnAbrir.classList.remove('verde');
-  btnAbrir.classList.add('amarillo');
+  btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent = "Empuje la Puerta";
   enviarMQTT(`apartamento${a}/portal`,'abrir');
-
   setTimeout(()=>{
     if(!btnAbrir.disabled){
-      btnAbrir.classList.remove('amarillo');
-      btnAbrir.classList.add('verde');
+      btnAbrir.classList.replace('amarillo','verde');
       btnAbrir.textContent = "Abrir Puerta Portal";
     }
   },3000);
@@ -340,15 +305,12 @@ btnAbrir.addEventListener('click', ()=>{
 
 btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
-  btnAbrirApto.classList.remove('verde');
-  btnAbrirApto.classList.add('amarillo');
+  btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent = "Empuje la Puerta";
   enviarMQTT(`apartamento${a}/apto`,'abrir');
-
   setTimeout(()=>{
     if(!btnAbrirApto.disabled){
-      btnAbrirApto.classList.remove('amarillo');
-      btnAbrirApto.classList.add('verde');
+      btnAbrirApto.classList.replace('amarillo','verde');
       btnAbrirApto.textContent = "Abrir Puerta Apartamento";
     }
   },3000);
