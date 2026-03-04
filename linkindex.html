@@ -130,28 +130,52 @@ button{
 
 
 
-
-
-
 // -------- MQTT --------
-const broker = 'wss://broker.hivemq.com:8884/mqtt';
-const client = mqtt.connect(broker);
+
+// Leer parámetros de la URL
+const params = new URLSearchParams(window.location.search);
+const m = params.get('m');
+
+// Separar usuario, password y broker
+const partesMQTT = m.split('*');
+
+const username = partesMQTT[0];
+const password = partesMQTT[1];
+const broker = partesMQTT[2];
+
+// Conexión MQTT
+const client = mqtt.connect(broker, {
+  username: username,
+  password: password
+});
+
+// Eventos de conexión
+client.on('connect', () => {
+  console.log("✅ Conectado a HiveMQ Cloud");
+});
+
+client.on('error', (err) => {
+  console.log("❌ Error MQTT:", err);
+});
 
 function enviarMQTT(topic, accion){
   const mensaje = {
-    id: Date.now(),               // ID único generado por la fecha/hora actual
-    accion: accion,               // 'on'/'off' para luces, 'abrir' para puertas
-    clave: params.get('k'),       // clave de acceso
-    apartamento: a,               // número de apartamento
-    fechaAlta: params.get('fa'),  // fecha y hora de alta con milisegundos
-    fechaEntrada: params.get('fe'), // fecha inicio
-    horaEntrada: params.get('he'),  // hora inicio
-    fechaFin: params.get('fs'),     // fecha fin
-    horaFin: params.get('hs')       // hora fin
+    id: Date.now(),
+    accion: accion,
+    clave: params.get('k'),
+    apartamento: a,
+    fechaAlta: params.get('fa'),
+    fechaEntrada: params.get('fe'),
+    horaEntrada: params.get('he'),
+    fechaFin: params.get('fs'),
+    horaFin: params.get('hs')
   };
+
+ // Mostrar en consola el topic y el mensaje que se va a enviar
+  console.log("➡️ Enviando MQTT:", topic, JSON.stringify(mensaje));
+
   client.publish(topic, JSON.stringify(mensaje), {qos:1});
 }
-
 
 
 
