@@ -59,8 +59,9 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   margin-top:1rem;
 }
 
-/* -------- BOTONES GENERALES -------- */
+/* -------- TODOS LOS BOTONES -------- */
 button{
+  min-width:160px; /* ancho mínimo suficiente para "Encender Luz 4" */
   padding:1rem 0.5rem;
   font-size:1.6rem;
   border-radius:15px;
@@ -69,19 +70,17 @@ button{
   font-weight:bold;
   color:white;
   transition:0.3s;
-  white-space: nowrap;  
-  text-align: center;    
+  white-space: nowrap;
+  text-align: center;
 }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
 
-/* -------- SOLO BOTONES DE LUCES (TAMAÑO ANCHO FIJO, altura adaptable) -------- */
+/* -------- SOLO BOTONES LUCES -------- */
 #botonesLuces button {
-  width:180px;
+  width:180px; /* ancho fijo para todos los botones de luces */
   min-width:180px;
-  max-width:180px;
-
   padding:0.5rem 0.5rem;
   display:flex;
   align-items:center;
@@ -205,7 +204,7 @@ if(l>0){
   }
 }
 
-// -------- INICIALIZAR ESTADO LUCES AL INICIO --------
+// -------- INICIALIZAR ESTADO LUCES --------
 client.on('connect', ()=>{
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
@@ -278,7 +277,6 @@ validarAcceso();
 // -------- EVENTOS PORTAL/APTO --------
 btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
-
   btnAbrir.classList.remove('verde');
   btnAbrir.classList.add('amarillo');
   btnAbrir.textContent = "Empuje la Puerta";
@@ -295,7 +293,6 @@ btnAbrir.addEventListener('click', ()=>{
 
 btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
-
   btnAbrirApto.classList.remove('verde');
   btnAbrirApto.classList.add('amarillo');
   btnAbrirApto.textContent = "Empuje la Puerta";
