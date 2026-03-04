@@ -159,6 +159,12 @@ function enviarMQTT(topic, accion){
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString(); // ISO con milisegundos
 
+  // Duración del relé según tipo de dispositivo
+  let duracion_rele = 36000; // default para luces
+  if(topic.includes('/portal') || topic.includes('/apto')){
+    duracion_rele = 3;
+  }
+
   const mensaje = {
     id: ahora.getTime(), // timestamp en ms
     accion,
