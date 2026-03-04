@@ -141,7 +141,6 @@ const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
 
 let botonesLuz = [];
-let estadoAnteriorApto = null;
 
 // -------- FORMATEO FECHA --------
 function formatearFechaHora(f,h){
@@ -164,51 +163,51 @@ document.getElementById('horaFin').textContent = fin.hora;
 if(l>0){
   panelLuces.style.display='block';
   for(let i=1;i<=l;i++){
-    const btn=document.createElement('button');
-    btn.dataset.index=i;
+    const btn = document.createElement('button');
+    btn.dataset.index = i;
     btn.classList.add('verde');
     btn.textContent = `Encender Luz ${i}`;
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
 
+    // Evento click alterna verde/amarillo y envía MQTT correspondiente
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
 
-      if(btn.classList.contains('amarillo')){
-        btn.classList.remove('amarillo');
-        btn.classList.add('verde');
-        btn.textContent = `Encender Luz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`,'off');
-      }else{
+      if(btn.classList.contains('verde')){
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
         btn.textContent = `Apagar Luz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`,'on');
+        enviarMQTT(`apartamento${a}/luz${i}`, 'on');
+      } else {
+        btn.classList.remove('amarillo');
+        btn.classList.add('verde');
+        btn.textContent = `Encender Luz ${i}`;
+        enviarMQTT(`apartamento${a}/luz${i}`, 'off');
       }
     });
   }
 }
 
-// -------- INICIALIZACIÓN DE ESTADO DE LUCES AL ABRIR EL PROGRAMA --------
-function inicializarLucesMQTT() {
+// -------- INICIALIZAR ESTADO LUCES AL INICIO --------
+client.on('connect', ()=>{
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = (ahora >= fIni && ahora <= fFin);
 
-  if(!acceso) return; // fuera de fechas, no hacer nada
+  if(!acceso) return; // fuera de fechas
 
-  botonesLuz.forEach((btn, index) => {
+  // Pedir estado de cada luz solo al inicio
+  botonesLuz.forEach((btn,index)=>{
     const topic = `apartamento${a}/luz${index+1}`;
-    
-    // Suscribirse al topic de cada luz para obtener su estado
-    client.subscribe(topic, { qos: 1 });
+    client.subscribe(topic, {qos:1});
 
-    client.on('message', (t, message) => {
-      if(t !== topic) return; 
+    // Una sola vez, al recibir el estado inicial
+    const handler = (t, message)=>{
+      if(t !== topic) return;
       const estado = message.toString(); // 'on' o 'off'
-
-      if(estado === 'on') {
+      if(estado === 'on'){
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
         btn.textContent = `Apagar Luz ${index+1}`;
@@ -217,29 +216,25 @@ function inicializarLucesMQTT() {
         btn.classList.add('verde');
         btn.textContent = `Encender Luz ${index+1}`;
       }
-    });
+      // Desuscribimos para que no vuelva a cambiar automáticamente
+      client.removeListener('message', handler);
+    };
 
-    // Pedir estado actual
-    enviarMQTT(topic, 'get'); 
+    client.on('message', handler);
+
+    // Solicitar estado actual
+    enviarMQTT(topic, 'get');
   });
-}
-
-// Solo al conectar MQTT, ejecutar inicialización de luces
-client.on('connect', () => {
-  inicializarLucesMQTT();
 });
 
-// -------- VALIDACIÓN --------
+// -------- VALIDACIÓN ACCESO --------
 function validarAcceso(){
-  const ahora=new Date();
-  const fIni=new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin=new Date(`${fin.fecha}T${fin.hora}:00`);
-
-  const acceso=(ahora>=fIni && ahora<=fFin);
-  const aptoActivo=acceso && ca;
-  const portalActivo=acceso && cp;
-
-  estadoAnteriorApto = aptoActivo;
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = (ahora>=fIni && ahora<=fFin);
+  const aptoActivo = acceso && ca;
+  const portalActivo = acceso && cp;
 
   // PORTAL
   btnAbrir.disabled = !portalActivo;
@@ -251,23 +246,15 @@ function validarAcceso(){
   btnAbrirApto.classList.toggle('gris', !aptoActivo);
   btnAbrirApto.textContent = btnAbrirApto.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Apartamento";
 
-  // LUCES
-  if(l>0){
-    botonesLuz.forEach((b,index)=>{
-      b.disabled = !aptoActivo;
-      if(!aptoActivo){
-        b.classList.remove('amarillo','verde');
-        b.classList.add('gris');
-        b.textContent = `Encender Luz ${index+1}`;
-      } else {
-        if(!b.classList.contains('amarillo')) {
-          b.classList.remove('gris');
-          b.classList.add('verde');
-          b.textContent = `Encender Luz ${index+1}`;
-        }
-      }
-    });
-  }
+  // LUCES solo deshabilitar si fuera de acceso, sin cambiar color
+  botonesLuz.forEach((b,index)=>{
+    b.disabled = !aptoActivo;
+    if(!aptoActivo){
+      b.classList.remove('verde','amarillo');
+      b.classList.add('gris');
+      b.textContent = `Encender Luz ${index+1}`;
+    }
+  });
 
   estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
   estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
@@ -279,11 +266,11 @@ function validarAcceso(){
   estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 }
 
-setInterval(validarAcceso,60000);
+setInterval(validarAcceso, 60000);
 validarAcceso();
 
 // -------- EVENTOS PORTAL/APTO --------
-btnAbrir.addEventListener('click',()=>{
+btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
 
   btnAbrir.classList.remove('verde');
@@ -300,7 +287,7 @@ btnAbrir.addEventListener('click',()=>{
   },3000);
 });
 
-btnAbrirApto.addEventListener('click',()=>{
+btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
 
   btnAbrirApto.classList.remove('verde');
