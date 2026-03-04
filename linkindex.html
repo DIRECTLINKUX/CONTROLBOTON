@@ -165,7 +165,7 @@ function enviarMQTT(topic, accion){
     duracion_rele = 3;
   }
 
-  const mensaje = {
+const mensaje = {
     id: ahora.getTime(), // timestamp en ms
     accion,
     clave: k,
@@ -176,7 +176,7 @@ function enviarMQTT(topic, accion){
     fechaFin: fs,
     horaFin: hs,
     fechaHoraEnvio,        // fecha y hora de envío
-    duracion_rele: 3       // NUEVO CAMPO: duración del relé en segundos
+    duracion_rele           // duración dinámica según topic
   };
 
   // Mostrar en consola en el orden que quieras
