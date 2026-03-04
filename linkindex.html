@@ -189,6 +189,46 @@ if(l>0){
   }
 }
 
+// -------- INICIALIZACIÓN DE ESTADO DE LUCES AL ABRIR EL PROGRAMA --------
+function inicializarLucesMQTT() {
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = (ahora >= fIni && ahora <= fFin);
+
+  if(!acceso) return; // fuera de fechas, no hacer nada
+
+  botonesLuz.forEach((btn, index) => {
+    const topic = `apartamento${a}/luz${index+1}`;
+    
+    // Suscribirse al topic de cada luz para obtener su estado
+    client.subscribe(topic, { qos: 1 });
+
+    client.on('message', (t, message) => {
+      if(t !== topic) return; 
+      const estado = message.toString(); // 'on' o 'off'
+
+      if(estado === 'on') {
+        btn.classList.remove('verde');
+        btn.classList.add('amarillo');
+        btn.textContent = `Apagar Luz ${index+1}`;
+      } else {
+        btn.classList.remove('amarillo');
+        btn.classList.add('verde');
+        btn.textContent = `Encender Luz ${index+1}`;
+      }
+    });
+
+    // Pedir estado actual
+    enviarMQTT(topic, 'get'); 
+  });
+}
+
+// Solo al conectar MQTT, ejecutar inicialización de luces
+client.on('connect', () => {
+  inicializarLucesMQTT();
+});
+
 // -------- VALIDACIÓN --------
 function validarAcceso(){
   const ahora=new Date();
@@ -198,8 +238,6 @@ function validarAcceso(){
   const acceso=(ahora>=fIni && ahora<=fFin);
   const aptoActivo=acceso && ca;
   const portalActivo=acceso && cp;
-
-  // ---- Eliminado control automático de luces ----
 
   estadoAnteriorApto = aptoActivo;
 
