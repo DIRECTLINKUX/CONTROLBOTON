@@ -58,6 +58,8 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   gap:1rem;
   margin-top:1rem;
 }
+
+/* -------- ESTILO BOTONES FIJO (tamaño constante) -------- */
 button{
   width:180px;
   padding:1rem 0.5rem;
@@ -68,6 +70,8 @@ button{
   font-weight:bold;
   color:white;
   transition:0.3s;
+  white-space: nowrap;   /* evita que el texto haga salto de línea */
+  text-align: center;    /* centra siempre el texto */
 }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
@@ -189,7 +193,7 @@ if(l>0){
   }
 }
 
-// -------- INICIALIZAR ESTADO LUCES AL INICIO (modificado) --------
+// -------- INICIALIZAR ESTADO LUCES AL INICIO --------
 client.on('connect', ()=>{
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
