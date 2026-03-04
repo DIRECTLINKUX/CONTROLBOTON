@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -39,9 +39,16 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
 }
 .panel{
   border-radius:15px;
-  padding:1.5rem;
+  padding:1rem;
   margin-bottom:2rem;
   box-shadow:0 8px 18px rgba(0,0,0,0.25);
+}
+.titulo-panel{
+  font-size:2.5rem;
+  font-weight:bold;
+  padding:0.5rem 0;
+  margin-bottom:1rem;
+  border-bottom:2px solid #aaa;
 }
 .panel.portal{ background:#e3f5ea; border:3px solid #145c2c; }
 .panel.apto{ background:#e8edff; border:3px solid #1a3f9e; }
@@ -68,7 +75,7 @@ button{
   font-weight:bold;
   color:white;
   transition:0.3s;
-  white-space:pre-line; /* PERMITE DOS LÍNEAS */
+  white-space:pre-line; /* Permite dos líneas en los botones */
 }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
@@ -77,38 +84,40 @@ button{
 </head>
 <body>
 <div class="cuadro">
-<h2>Apertura de Puertas</h2>
-<div class="fecha-hora">
-Apartamento:
-<span id="apartamento"></span>
-<span id="estadoApartamento" style="font-weight:bold;"></span>
-</div>
-<div class="fecha-hora fecha-hora-combinada">
-<span>Inicio:</span>
-<span id="fechaInicio"></span>
-<span id="horaInicio"></span>
-<span>Fin:</span>
-<span id="fechaFin"></span>
-<span id="horaFin"></span>
-</div>
-<div class="panel portal">
-<div style="font-size:2.5rem;font-weight:bold;">Puerta Portal</div>
-<div class="estadoPuerta" id="estadoPortal"></div>
-<div class="botones">
-<button id="abrir" class="verde">Abrir Puerta Portal</button>
-</div>
-</div>
-<div class="panel apto">
-<div style="font-size:2.5rem;font-weight:bold;">Puerta Apartamento</div>
-<div class="estadoPuerta" id="estadoApto"></div>
-<div class="botones">
-<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
-</div>
-</div>
-<div class="panel luces" id="panelLuces" style="display:none;">
-<div style="font-size:2.5rem;font-weight:bold;">Luces</div>
-<div class="botones" id="botonesLuces"></div>
-</div>
+  <h2>Apertura de Puertas</h2>
+  <div class="fecha-hora">
+    Apartamento: <span id="apartamento"></span>
+    <span id="estadoApartamento" style="font-weight:bold;"></span>
+  </div>
+  <div class="fecha-hora fecha-hora-combinada">
+    <span>Inicio:</span>
+    <span id="fechaInicio"></span>
+    <span id="horaInicio"></span>
+    <span>Fin:</span>
+    <span id="fechaFin"></span>
+    <span id="horaFin"></span>
+  </div>
+
+  <div class="panel portal">
+    <div class="titulo-panel">Puerta Portal</div>
+    <div class="estadoPuerta" id="estadoPortal"></div>
+    <div class="botones">
+      <button id="abrir" class="verde">Abrir Puerta Portal</button>
+    </div>
+  </div>
+
+  <div class="panel apto">
+    <div class="titulo-panel">Puerta Apartamento</div>
+    <div class="estadoPuerta" id="estadoApto"></div>
+    <div class="botones">
+      <button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+    </div>
+  </div>
+
+  <div class="panel luces" id="panelLuces" style="display:none;">
+    <div class="titulo-panel">Luces</div>
+    <div class="botones" id="botonesLuces"></div>
+  </div>
 </div>
 
 <script>
@@ -145,10 +154,7 @@ let botonesLuz = [];
 
 // -------- FORMATEO FECHA --------
 function formatearFechaHora(f,h){
-  return {
-    fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
-    hora: h.slice(0,2)+':'+h.slice(2,4)
-  };
+  return { fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8), hora: h.slice(0,2)+':'+h.slice(2,4) };
 }
 
 const inicio = formatearFechaHora(fe, he);
@@ -173,7 +179,6 @@ if(l>0){
 
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
-
       if(btn.classList.contains('verde')){
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
@@ -189,7 +194,7 @@ if(l>0){
   }
 }
 
-// TODO EL RESTO DEL CÓDIGO PERMANECE EXACTAMENTE IGUAL
+// -------- EL RESTO DEL CÓDIGO (validaciones, MQTT, eventos) PERMANECE IGUAL --------
 </script>
 </body>
 </html>
