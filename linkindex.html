@@ -227,11 +227,11 @@ if(l>0){
       if(btn.classList.contains('verde')){
         btn.classList.replace('verde','amarillo');
         btn.textContent = `Apagar\nLuz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`, 'on');
+        enviarMQTT(`apartamento${a}/luz${i}`, 'ON');
       } else {
         btn.classList.replace('amarillo','verde');
         btn.textContent = `Encender\nLuz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`, 'off');
+        enviarMQTT(`apartamento${a}/luz${i}`, 'OFF');
       }
     });
   }
@@ -311,7 +311,7 @@ btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
   btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent = "Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/portal`,'on');
+  enviarMQTT(`apartamento${a}/portal`,'ON');
   setTimeout(()=>{
     if(!btnAbrir.disabled){
       btnAbrir.classList.replace('amarillo','verde');
@@ -324,7 +324,7 @@ btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
   btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent = "Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/apto`,'on');
+  enviarMQTT(`apartamento${a}/apto`,'ON');
   setTimeout(()=>{
     if(!btnAbrirApto.disabled){
       btnAbrirApto.classList.replace('amarillo','verde');
