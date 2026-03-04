@@ -127,14 +127,36 @@ button{
 </div>
 
 <script>
+
+
+
+
+
+
 // -------- MQTT --------
 const broker = 'wss://broker.hivemq.com:8884/mqtt';
 const client = mqtt.connect(broker);
 
 function enviarMQTT(topic, accion){
-  const mensaje = { id: Date.now(), accion: accion };
+  const mensaje = {
+    id: Date.now(),               // ID único generado por la fecha/hora actual
+    accion: accion,               // 'on'/'off' para luces, 'abrir' para puertas
+    clave: params.get('k'),       // clave de acceso
+    apartamento: a,               // número de apartamento
+    fechaAlta: params.get('fa'),  // fecha y hora de alta con milisegundos
+    fechaEntrada: params.get('fe'), // fecha inicio
+    horaEntrada: params.get('he'),  // hora inicio
+    fechaFin: params.get('fs'),     // fecha fin
+    horaFin: params.get('hs')       // hora fin
+  };
   client.publish(topic, JSON.stringify(mensaje), {qos:1});
 }
+
+
+
+
+
+
 
 // -------- PARÁMETROS --------
 const params = new URLSearchParams(window.location.search);
