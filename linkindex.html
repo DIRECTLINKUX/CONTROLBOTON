@@ -164,17 +164,8 @@ function enviarMQTT(topic, accion){
     fechaFin: fs,
     horaFin: hs
   };
-  // Mostrar en consola en el orden que quieres
-  console.log(
-    `➡️ Enviando MQTT: ${topic} | Fecha entrada: ${mensaje.fechaEntrada} Hora entrada: ${mensaje.horaEntrada} | Fecha fin: ${mensaje.fechaFin} Hora fin: ${mensaje.horaFin}`,
-    mensaje
-  );
-
-  client.publish(topic, JSON.stringify(mensaje), {qos:1});
-  console.log(`✅ Publicado correctamente en: ${topic}`);
-  );
-
-
+  // Mostrar en consola en el orden que quieras
+  console.log(`➡️ Enviando MQTT: ${topic} | Fecha entrada: ${fe} Hora entrada: ${he} | Fecha fin: ${fs} Hora fin: ${hs}`, mensaje);
 
   client.publish(topic, JSON.stringify(mensaje), {qos:1}, (err)=>{
     if(err) console.log("❌ Error al publicar:", err);
@@ -192,11 +183,11 @@ const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
 let botonesLuz = [];
 
-// -------- FORMATEO FECHA --------
+// -------- FORMATEO FECHA PARA PANTALLA --------
 function formatearFechaHora(f,h){
   return {
-    fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
-    hora: h.slice(0,2)+':'+h.slice(2,4)
+    fecha: f ? f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8) : '-',
+    hora: h ? h.slice(0,2)+':'+h.slice(2,4) : '-'
   };
 }
 const inicio = formatearFechaHora(fe, he);
@@ -266,20 +257,29 @@ function validarAcceso(){
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = (ahora>=fIni && ahora<=fFin);
+
   const aptoActivo = acceso && ca;
   const portalActivo = acceso && cp;
 
   // PORTAL
   btnAbrir.disabled = !portalActivo;
   btnAbrir.classList.toggle('gris', !portalActivo);
-  btnAbrir.textContent = btnAbrir.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Portal";
 
   // APTO
   btnAbrirApto.disabled = !aptoActivo;
   btnAbrirApto.classList.toggle('gris', !aptoActivo);
-  btnAbrirApto.textContent = btnAbrirApto.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Apartamento";
 
-  // LUCES solo deshabilitar si fuera de acceso
+  // ESTADOS EN PANTALLA
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
+
+  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
+
+  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
+
+  // LUCES
   botonesLuz.forEach((b,index)=>{
     b.disabled = !aptoActivo;
     if(!aptoActivo){
@@ -288,16 +288,11 @@ function validarAcceso(){
       b.textContent = `Encender\nLuz ${index+1}`;
     }
   });
-
-  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
-  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
-  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
-  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
-  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
-  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 }
-setInterval(validarAcceso,60000);
+
+// Validación inicial y actualización cada minuto
 validarAcceso();
+setInterval(validarAcceso,60000);
 
 // -------- EVENTOS PORTAL/APTO --------
 btnAbrir.addEventListener('click', ()=>{
