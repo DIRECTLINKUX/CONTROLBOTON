@@ -52,7 +52,7 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   margin-bottom:1rem;
 }
 
-/* --- BLOQUE ORIGINAL --- */
+/* CONTENEDOR GENERAL */
 .botones{
   display:flex;
   justify-content:center;
@@ -61,15 +61,15 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   margin-top:1rem;
 }
 
-/* --- LUCES: máximo 3 por línea --- */
+/* 🔥 LUCES: EXACTAMENTE 3 POR LÍNEA */
 #botonesLuces{
-  display:grid;
-  grid-template-columns: repeat(3, auto);
-  justify-content:center;
+  display:grid !important;
+  grid-template-columns: repeat(3, 1fr);
   gap:1rem;
+  justify-items:center;
 }
 
-/* BOTONES GENERALES (portal y apto) */
+/* BOTONES GENERALES */
 button{
   padding:1rem 0.5rem;
   font-size:1.6rem;
@@ -86,7 +86,7 @@ button{
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
 
-/* -------- BOTONES DE LUCES -------- */
+/* BOTONES DE LUCES */
 #botonesLuces button {
   padding:0.5rem;
   display:flex;
@@ -213,8 +213,6 @@ if(l>0){
     });
   }
 }
-
-// -------- RESTO DEL SCRIPT SIN CAMBIOS --------
 </script>
 </body>
 </html>
