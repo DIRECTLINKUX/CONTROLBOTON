@@ -198,7 +198,6 @@ client.on('connect', ()=>{
 
   if(!acceso) return; // fuera de fechas
 
-  // Pedir estado de cada luz solo al inicio
   botonesLuz.forEach((btn,index)=>{
     const topic = `apartamento${a}/luz${index+1}`;
     client.subscribe(topic, {qos:1});
@@ -221,9 +220,7 @@ client.on('connect', ()=>{
     };
 
     client.on('message', handler);
-
-    // Solicitar estado actual
-    enviarMQTT(topic, 'get');
+    enviarMQTT(topic, 'get'); // solicitar estado inicial
   });
 });
 
