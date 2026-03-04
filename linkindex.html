@@ -189,7 +189,7 @@ if(l>0){
   }
 }
 
-// -------- INICIALIZAR ESTADO LUCES AL INICIO --------
+// -------- INICIALIZAR ESTADO LUCES AL INICIO (modificado) --------
 client.on('connect', ()=>{
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
@@ -203,7 +203,7 @@ client.on('connect', ()=>{
     client.subscribe(topic, {qos:1});
 
     // Una sola vez, al recibir el estado inicial
-    const handler = (t, message)=>{
+    client.once('message', (t, message)=>{
       if(t !== topic) return;
       const estado = message.toString(); // 'on' o 'off'
       if(estado === 'on'){
@@ -215,12 +215,10 @@ client.on('connect', ()=>{
         btn.classList.add('verde');
         btn.textContent = `Encender Luz ${index+1}`;
       }
-      // Desuscribimos para que no vuelva a cambiar automáticamente
-      client.removeListener('message', handler);
-    };
+    });
 
-    client.on('message', handler);
-    enviarMQTT(topic, 'get'); // solicitar estado inicial
+    // Solicitar estado actual
+    enviarMQTT(topic, 'get');
   });
 });
 
