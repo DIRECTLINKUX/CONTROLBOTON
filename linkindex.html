@@ -76,22 +76,18 @@ button{
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
 
-/* -------- SOLO BOTONES DE LUCES (TAMAÑO FIJO, TEXTO AJUSTABLE) -------- */
+/* -------- SOLO BOTONES DE LUCES (TAMAÑO ANCHO FIJO, altura adaptable) -------- */
 #botonesLuces button {
   width:180px;
   min-width:180px;
   max-width:180px;
-  height:60px;
-  min-height:60px;
-  max-height:60px;
 
+  padding:0.5rem 0.5rem;
   display:flex;
-  align-items:center;       /* centra verticalmente */
-  justify-content:center;   /* centra horizontalmente */
-
-  padding:0 0.5rem;         /* espacio interno lateral */
-  overflow:hidden;          /* evita que el texto salga del botón */
-  text-overflow:ellipsis;   /* pone "..." si es muy largo */
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  line-height:1.2;
 }
 </style>
 </head>
