@@ -152,9 +152,15 @@ const client = mqtt.connect(broker, { username, password });
 client.on('connect', () => console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err => console.log("❌ Error MQTT:", err));
 
+
+
+
 function enviarMQTT(topic, accion){
+  const ahora = new Date();
+  const fechaHoraEnvio = ahora.toISOString(); // ISO con milisegundos
+
   const mensaje = {
-    id: Date.now(),
+    id: ahora.getTime(), // timestamp en ms
     accion,
     clave: k,
     apartamento: a,
@@ -162,8 +168,11 @@ function enviarMQTT(topic, accion){
     fechaEntrada: fe,
     horaEntrada: he,
     fechaFin: fs,
-    horaFin: hs
+    horaFin: hs,
+    fechaHoraEnvio,        // fecha y hora de envío
+    duracion_rele: 3       // NUEVO CAMPO: duración del relé en segundos
   };
+
   // Mostrar en consola en el orden que quieras
   console.log(`➡️ Enviando MQTT: ${topic} | Fecha entrada: ${fe} Hora entrada: ${he} | Fecha fin: ${fs} Hora fin: ${hs}`, mensaje);
 
@@ -172,6 +181,9 @@ function enviarMQTT(topic, accion){
     else console.log("✅ Publicado correctamente en:", topic);
   });
 }
+
+
+
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -299,7 +311,7 @@ btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
   btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent = "Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/portal`,'abrir');
+  enviarMQTT(`apartamento${a}/portal`,'on');
   setTimeout(()=>{
     if(!btnAbrir.disabled){
       btnAbrir.classList.replace('amarillo','verde');
@@ -312,7 +324,7 @@ btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
   btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent = "Empuje la Puerta";
-  enviarMQTT(`apartamento${a}/apto`,'abrir');
+  enviarMQTT(`apartamento${a}/apto`,'on');
   setTimeout(()=>{
     if(!btnAbrirApto.disabled){
       btnAbrirApto.classList.replace('amarillo','verde');
