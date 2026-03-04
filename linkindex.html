@@ -49,6 +49,8 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   padding:0.5rem 0;
   margin-bottom:1rem;
   border-bottom:2px solid #aaa;
+  background: rgba(255,255,255,0.4);
+  border-radius:8px;
 }
 .panel.portal{ background:#e3f5ea; border:3px solid #145c2c; }
 .panel.apto{ background:#e8edff; border:3px solid #1a3f9e; }
@@ -75,7 +77,7 @@ button{
   font-weight:bold;
   color:white;
   transition:0.3s;
-  white-space:pre-line; /* Permite dos líneas en los botones */
+  white-space:pre-line; /* permite dos líneas en los botones */
 }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
@@ -85,6 +87,7 @@ button{
 <body>
 <div class="cuadro">
   <h2>Apertura de Puertas</h2>
+
   <div class="fecha-hora">
     Apartamento: <span id="apartamento"></span>
     <span id="estadoApartamento" style="font-weight:bold;"></span>
@@ -98,6 +101,7 @@ button{
     <span id="horaFin"></span>
   </div>
 
+  <!-- PANEL PORTAL -->
   <div class="panel portal">
     <div class="titulo-panel">Puerta Portal</div>
     <div class="estadoPuerta" id="estadoPortal"></div>
@@ -106,6 +110,7 @@ button{
     </div>
   </div>
 
+  <!-- PANEL APTO -->
   <div class="panel apto">
     <div class="titulo-panel">Puerta Apartamento</div>
     <div class="estadoPuerta" id="estadoApto"></div>
@@ -114,6 +119,7 @@ button{
     </div>
   </div>
 
+  <!-- PANEL LUCES -->
   <div class="panel luces" id="panelLuces" style="display:none;">
     <div class="titulo-panel">Luces</div>
     <div class="botones" id="botonesLuces"></div>
@@ -137,8 +143,8 @@ const he = params.get('he');
 const fs = params.get('fs');
 const hs = params.get('hs');
 const a = Math.min(Math.max(parseInt(params.get('a')),1),100) || 1;
-const cp = params.get('cp')==='1';
-const ca = params.get('ca')==='1';
+const cp = params.get('cp')==='1'; // check portal
+const ca = params.get('ca')==='1'; // check apartamento
 const l = parseInt(params.get('l'))||0;
 
 // -------- ELEMENTOS --------
@@ -149,12 +155,14 @@ const estadoApto = document.getElementById('estadoApto');
 const estadoApartamento = document.getElementById('estadoApartamento');
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
-
 let botonesLuz = [];
 
 // -------- FORMATEO FECHA --------
 function formatearFechaHora(f,h){
-  return { fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8), hora: h.slice(0,2)+':'+h.slice(2,4) };
+  return {
+    fecha: f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8),
+    hora: h.slice(0,2)+':'+h.slice(2,4)
+  };
 }
 
 const inicio = formatearFechaHora(fe, he);
@@ -194,7 +202,111 @@ if(l>0){
   }
 }
 
-// -------- EL RESTO DEL CÓDIGO (validaciones, MQTT, eventos) PERMANECE IGUAL --------
+// -------- INICIALIZAR ESTADO LUCES AL INICIO --------
+client.on('connect', ()=>{
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = (ahora >= fIni && ahora <= fFin);
+
+  if(!acceso) return; // fuera de fechas
+
+  botonesLuz.forEach((btn,index)=>{
+    const topic = `apartamento${a}/luz${index+1}`;
+    client.subscribe(topic, {qos:1});
+
+    client.once('message', (t, message)=>{
+      if(t !== topic) return;
+      const estado = message.toString();
+      if(estado === 'on'){
+        btn.classList.remove('verde');
+        btn.classList.add('amarillo');
+        btn.textContent = `Apagar\nLuz ${index+1}`;
+      } else {
+        btn.classList.remove('amarillo');
+        btn.classList.add('verde');
+        btn.textContent = `Encender\nLuz ${index+1}`;
+      }
+    });
+
+    enviarMQTT(topic, 'get');
+  });
+});
+
+// -------- VALIDACIÓN ACCESO --------
+function validarAcceso(){
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = (ahora>=fIni && ahora<=fFin);
+  const aptoActivo = acceso && ca;
+  const portalActivo = acceso && cp;
+
+  // PORTAL
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris', !portalActivo);
+  btnAbrir.textContent = btnAbrir.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Portal";
+
+  // APTO
+  btnAbrirApto.disabled = !aptoActivo;
+  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+  btnAbrirApto.textContent = btnAbrirApto.classList.contains('amarillo') ? "Empuje la Puerta" : "Abrir Puerta Apartamento";
+
+  // LUCES solo deshabilitar si fuera de acceso, sin cambiar color
+  botonesLuz.forEach((b,index)=>{
+    b.disabled = !aptoActivo;
+    if(!aptoActivo){
+      b.classList.remove('verde','amarillo');
+      b.classList.add('gris');
+      b.textContent = `Encender\nLuz ${index+1}`;
+    }
+  });
+
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
+
+  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
+
+  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
+}
+
+setInterval(validarAcceso, 60000);
+validarAcceso();
+
+// -------- EVENTOS PORTAL/APTO --------
+btnAbrir.addEventListener('click', ()=>{
+  if(btnAbrir.disabled) return;
+  btnAbrir.classList.remove('verde');
+  btnAbrir.classList.add('amarillo');
+  btnAbrir.textContent = "Empuje la Puerta";
+  enviarMQTT(`apartamento${a}/portal`,'abrir');
+
+  setTimeout(()=>{
+    if(!btnAbrir.disabled){
+      btnAbrir.classList.remove('amarillo');
+      btnAbrir.classList.add('verde');
+      btnAbrir.textContent = "Abrir Puerta Portal";
+    }
+  },3000);
+});
+
+btnAbrirApto.addEventListener('click', ()=>{
+  if(btnAbrirApto.disabled) return;
+  btnAbrirApto.classList.remove('verde');
+  btnAbrirApto.classList.add('amarillo');
+  btnAbrirApto.textContent = "Empuje la Puerta";
+  enviarMQTT(`apartamento${a}/apto`,'abrir');
+
+  setTimeout(()=>{
+    if(!btnAbrirApto.disabled){
+      btnAbrirApto.classList.remove('amarillo');
+      btnAbrirApto.classList.add('verde');
+      btnAbrirApto.textContent = "Abrir Puerta Apartamento";
+    }
+  },3000);
+});
 </script>
 </body>
 </html>
