@@ -164,7 +164,17 @@ function enviarMQTT(topic, accion){
     fechaFin: fs,
     horaFin: hs
   };
-  console.log("➡️ Enviando MQTT:", topic, mensaje);
+  // Mostrar en consola en el orden que quieres
+  console.log(
+    `➡️ Enviando MQTT: ${topic} | Fecha entrada: ${mensaje.fechaEntrada} Hora entrada: ${mensaje.horaEntrada} | Fecha fin: ${mensaje.fechaFin} Hora fin: ${mensaje.horaFin}`,
+    mensaje
+  );
+
+  client.publish(topic, JSON.stringify(mensaje), {qos:1});
+  console.log(`✅ Publicado correctamente en: ${topic}`);
+  );
+
+
 
   client.publish(topic, JSON.stringify(mensaje), {qos:1}, (err)=>{
     if(err) console.log("❌ Error al publicar:", err);
