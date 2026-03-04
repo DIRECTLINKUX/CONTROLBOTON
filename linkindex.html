@@ -59,9 +59,8 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   margin-top:1rem;
 }
 
-/* -------- TODOS LOS BOTONES -------- */
+/* BOTONES GENERALES (portal y apto) */
 button{
-  min-width:160px; /* ancho mínimo suficiente para "Encender Luz 4" */
   padding:1rem 0.5rem;
   font-size:1.6rem;
   border-radius:15px;
@@ -77,16 +76,13 @@ button{
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
 
-/* -------- SOLO BOTONES LUCES -------- */
+/* -------- BOTONES DE LUCES: ancho calculado automáticamente -------- */
 #botonesLuces button {
-  width:180px; /* ancho fijo para todos los botones de luces */
-  min-width:180px;
-  padding:0.5rem 0.5rem;
+  padding:0.5rem;
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   text-align:center;
-  line-height:1.2;
 }
 </style>
 </head>
@@ -178,11 +174,23 @@ document.getElementById('horaFin').textContent = fin.hora;
 // -------- CREAR BOTONES LUCES --------
 if(l>0){
   panelLuces.style.display='block';
+
+  let textoMax = " Encender Luz " + l + " "; // texto más largo
+  let spanTest = document.createElement('span');
+  spanTest.style.visibility="hidden";
+  spanTest.style.position="absolute";
+  spanTest.style.fontWeight="bold";
+  spanTest.textContent = textoMax;
+  document.body.appendChild(spanTest);
+  const anchoMax = spanTest.offsetWidth + 20; // ancho en px + padding
+  document.body.removeChild(spanTest);
+
   for(let i=1;i<=l;i++){
     const btn = document.createElement('button');
     btn.dataset.index = i;
     btn.classList.add('verde');
-    btn.textContent = `Encender Luz ${i}`;
+    btn.textContent = ` Encender Luz ${i} `;
+    btn.style.width = `${anchoMax}px`; // mismo ancho para todos
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
 
@@ -192,13 +200,11 @@ if(l>0){
       if(btn.classList.contains('verde')){
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
-        btn.textContent = `Apagar Luz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`, 'on');
+        btn.textContent = ` Apagar Luz ${i} `;
       } else {
         btn.classList.remove('amarillo');
         btn.classList.add('verde');
-        btn.textContent = `Encender Luz ${i}`;
-        enviarMQTT(`apartamento${a}/luz${i}`, 'off');
+        btn.textContent = ` Encender Luz ${i} `;
       }
     });
   }
@@ -223,11 +229,11 @@ client.on('connect', ()=>{
       if(estado === 'on'){
         btn.classList.remove('verde');
         btn.classList.add('amarillo');
-        btn.textContent = `Apagar Luz ${index+1}`;
+        btn.textContent = ` Apagar Luz ${index+1} `;
       } else {
         btn.classList.remove('amarillo');
         btn.classList.add('verde');
-        btn.textContent = `Encender Luz ${index+1}`;
+        btn.textContent = ` Encender Luz ${index+1} `;
       }
     });
 
@@ -257,7 +263,7 @@ function validarAcceso(){
     if(!aptoActivo){
       b.classList.remove('verde','amarillo');
       b.classList.add('gris');
-      b.textContent = `Encender Luz ${index+1}`;
+      b.textContent = ` Encender Luz ${index+1} `;
     }
   });
 
