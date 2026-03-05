@@ -23,7 +23,7 @@ body{
   width:98%;
   max-width:750px;
 }
-h2{ font-size:4.5rem; margin-bottom:1rem; cursor:pointer; }
+h2{ font-size:4.5rem; margin-bottom:1rem; }
 .fecha-hora{
   display:flex;
   font-size:2.5rem;
@@ -82,35 +82,11 @@ button{
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
-
-/* POP-UP CONFIGURACIÓN */
-#popupConfig {
-  display:none;
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:white;
-  padding:2rem;
-  border-radius:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.4);
-  z-index:1000;
-  max-height:80%;
-  overflow-y:auto;
-}
-#popupConfig select {
-  font-size: 1.5rem;
-  padding: 0.3rem;
-  margin-left: 1rem;
-}
-#popupConfig button {
-  cursor:pointer;
-}
 </style>
 </head>
 <body>
 <div class="cuadro">
-  <h2 id="tituloPrincipal">Apertura de Puertas</h2>
+  <h2>Apertura de Puertas</h2>
 
   <div class="fecha-hora">
     Apartamento: <span id="apartamento"></span>
@@ -150,13 +126,6 @@ button{
   </div>
 </div>
 
-<!-- POP-UP CONFIGURACIÓN -->
-<div id="popupConfig">
-  <h3>Configuración de Tiempos</h3>
-  <div id="configBotones" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;"></div>
-  <button id="cerrarPopup" style="margin-top:1rem; padding:0.5rem 1rem; font-size:1.5rem;">Cerrar</button>
-</div>
-
 <script>
 // -------- PARÁMETROS DESDE LA URL --------
 const params = new URLSearchParams(window.location.search);
@@ -183,20 +152,21 @@ const client = mqtt.connect(broker, { username, password });
 client.on('connect', () => console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err => console.log("❌ Error MQTT:", err));
 
+
+
+
 function enviarMQTT(topic, accion){
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString(); // ISO con milisegundos
 
-  // -------- NUEVO: duracion_rele desde localStorage --------
-  let botonId;
-  if(topic.includes('/portal')) botonId='abrir';
-  else if(topic.includes('/apto')) botonId='abrirApto';
-  else if(topic.includes('/luz')) botonId = topic.split('/luz')[1];
+  // Duración del relé según tipo de dispositivo
+  let duracion_rele = 36000; // default para luces
+  if(topic.includes('/portal') || topic.includes('/apto')){
+    duracion_rele = 3;
+  }
 
-  let duracion_rele = parseInt(localStorage.getItem('tiempo_'+botonId)) || (topic.includes('/luz') ? 3600 : 3);
-
-  const mensaje = {
-    id: ahora.getTime(),
+const mensaje = {
+    id: ahora.getTime(), // timestamp en ms
     accion,
     clave: k,
     apartamento: a,
@@ -205,10 +175,11 @@ function enviarMQTT(topic, accion){
     horaEntrada: he,
     fechaFin: fs,
     horaFin: hs,
-    fechaHoraEnvio,
-    duracion_rele
+    fechaHoraEnvio,        // fecha y hora de envío
+    duracion_rele           // duración dinámica según topic
   };
 
+  // Mostrar en consola en el orden que quieras
   console.log(`➡️ Enviando MQTT: ${topic} | Fecha entrada: ${fe} Hora entrada: ${he} | Fecha fin: ${fs} Hora fin: ${hs}`, mensaje);
 
   client.publish(topic, JSON.stringify(mensaje), {qos:1}, (err)=>{
@@ -216,6 +187,9 @@ function enviarMQTT(topic, accion){
     else console.log("✅ Publicado correctamente en:", topic);
   });
 }
+
+
+
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -254,7 +228,7 @@ if(l>0){
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
 
-    btn.addEventListener('click', ()=> {
+    btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
       if(btn.classList.contains('verde')){
         btn.classList.replace('verde','amarillo');
@@ -363,78 +337,6 @@ btnAbrirApto.addEventListener('click', ()=>{
       btnAbrirApto.textContent = "Abrir Puerta Apartamento";
     }
   },3000);
-});
-
-// -------- POP-UP CONFIGURACIÓN --------
-const tituloPrincipal = document.getElementById('tituloPrincipal');
-const popupConfig = document.getElementById('popupConfig');
-const configBotones = document.getElementById('configBotones');
-const cerrarPopup = document.getElementById('cerrarPopup');
-
-let pulsacionTimer;
-
-tituloPrincipal.addEventListener('mousedown', ()=> {
-  pulsacionTimer = setTimeout(()=> {
-    mostrarPopupConfig();
-  }, 5000); // 5 segundos
-});
-tituloPrincipal.addEventListener('mouseup', ()=> clearTimeout(pulsacionTimer));
-tituloPrincipal.addEventListener('mouseleave', ()=> clearTimeout(pulsacionTimer));
-
-const valoresPortalApto = [0,1,2,3,4];
-const valoresLuces = [0,15,30,45,60,120,180,240,300,360,420,480,540,600,660,720,780,840,900,960,1020,1080,1140,1200,1260,1320,1380,1440,'Continuo'];
-
-function mostrarPopupConfig(){
-  popupConfig.style.display = 'block';
-  configBotones.innerHTML = '';
-
-  const todosBotones = [
-    {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
-    {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
-    ...botonesLuz.map((b,i)=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
-  ];
-
-  todosBotones.forEach(boton => {
-    const div = document.createElement('div');
-    div.style.display = 'flex';
-    div.style.alignItems = 'center';
-    
-    const label = document.createElement('span');
-    label.textContent = boton.nombre;
-    label.style.width = '200px';
-    
-    const select = document.createElement('select');
-    select.dataset.botonId = boton.id;
-
-    let opciones = [];
-    if(boton.tipo === 'portal' || boton.tipo === 'apto'){
-      opciones = valoresPortalApto;
-    } else {
-      opciones = valoresLuces;
-    }
-
-    opciones.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = (v === 'Continuo') ? 999999 : v;
-      opt.textContent = v === 60 ? '1 Hora' : v === 120 ? '2 Horas' : v === 180 ? '3 Horas' : v === 240 ? '4 Horas' : v === 300 ? '5 Horas' : v === 360 ? '6 Horas' : v === 420 ? '7 Horas' : v === 480 ? '8 Horas' : v === 540 ? '9 Horas' : v === 600 ? '10 Horas' : v === 660 ? '11 Horas' : v === 720 ? '12 Horas' : v === 780 ? '13 Horas' : v === 840 ? '14 Horas' : v === 900 ? '15 Horas' : v === 960 ? '16 Horas' : v === 1020 ? '17 Horas' : v === 1080 ? '18 Horas' : v === 1140 ? '19 Horas' : v === 1200 ? '20 Horas' : v === 1260 ? '21 Horas' : v === 1320 ? '22 Horas' : v === 1380 ? '23 Horas' : v === 1440 ? '24 Horas' : v === 999999 ? 'Continuo' : v);
-      select.appendChild(opt);
-    });
-
-    const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
-    if(valorGuardado) select.value = valorGuardado;
-
-    select.addEventListener('change', ()=> {
-      localStorage.setItem('tiempo_'+boton.id, select.value);
-    });
-
-    div.appendChild(label);
-    div.appendChild(select);
-    configBotones.appendChild(div);
-  });
-}
-
-cerrarPopup.addEventListener('click', ()=> {
-  popupConfig.style.display = 'none';
 });
 </script>
 </body>
