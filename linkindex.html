@@ -173,12 +173,30 @@ const partesMQTT = m.split('*');
 const username = partesMQTT[0];
 const password = partesMQTT[1];
 const broker = partesMQTT[2];
-const client = mqtt.connect(broker,{username,password});
-client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-client.on('error', e=>console.log("❌ Error MQTT:",e));
 
-// Enviar mensaje MQTT
+let client = null;
+let clienteConectado = false;
+
+function conectarMQTT() {
+  client = mqtt.connect(broker,{username,password});
+  client.on('connect', ()=>{
+    clienteConectado = true;
+    console.log("✅ Conectado a HiveMQ Cloud");
+  });
+  client.on('error', e=>console.log("❌ Error MQTT:",e));
+  client.on('close', ()=>{ clienteConectado=false; console.log("⚠️ Conexión MQTT cerrada"); });
+  client.on('offline', ()=>{ clienteConectado=false; console.log("⚠️ MQTT offline"); });
+}
+
+// Llamada inicial
+conectarMQTT();
+
 function enviarMQTT(topic,accion){
+  if(!clienteConectado){
+    console.log(`⚠️ Intento de envío antes de conectar: ${topic} ${accion}`);
+    return;
+  }
+
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString(); 
   let duracion_rele=0;
@@ -310,7 +328,6 @@ function iniciarContador(btn,segundos,textoFinal){
 
 botonesLuz.forEach((btn,index)=>{
   const num=index+1;
-  // click
   btn.addEventListener('click', ()=>{
     if(btn.disabled) return;
     if(btn.classList.contains('verde')){
@@ -327,26 +344,27 @@ botonesLuz.forEach((btn,index)=>{
 });
 
 // -------- RECIBIR MQTT --------
-client.on('message',(topic,message)=>{
-  botonesLuz.forEach((btn,index)=>{
-    const luzTopic=`apartamento${a}/luz${index+1}`;
-    if(topic===luzTopic){
-      const estado=message.toString().toLowerCase();
-      if(estado==='off'){
-        btn.classList.replace('amarillo','verde');
-        btn.textContent=`Encender Luz ${index+1}`;
-      } else if(estado==='on'){
-        btn.classList.replace('verde','amarillo');
-        btn.textContent=`Encendida Luz ${index+1}`;
+if(client){
+  client.on('message',(topic,message)=>{
+    botonesLuz.forEach((btn,index)=>{
+      const luzTopic=`apartamento${a}/luz${index+1}`;
+      if(topic===luzTopic){
+        const estado=message.toString().toLowerCase();
+        if(estado==='off'){
+          btn.classList.replace('amarillo','verde');
+          btn.textContent=`Encender Luz ${index+1}`;
+        } else if(estado==='on'){
+          btn.classList.replace('verde','amarillo');
+          btn.textContent=`Encendida Luz ${index+1}`;
+        }
       }
-    }
+    });
   });
-});
+}
 
 // -------- SOLICITAR ESTADO LUCES AL INICIAR --------
 botonesLuz.forEach((btn,index)=>{
   const luzTopic=`apartamento${a}/luz${index+1}`;
-  // Solicitar estado al ESP
   enviarMQTT(luzTopic,'STATUS');
 });
 
@@ -398,22 +416,30 @@ function mostrarPopupConfig(){
         else if(v===480) opt.textContent='8 Horas';
         else if(v===540) opt.textContent='9 Horas';
         else if(v===600) opt.textContent='10 Horas';
-        opt.value = v*60; 
+        opt.value = (v==='Continuo'?999999:v*60);
       }
       select.appendChild(opt);
     });
 
-    const valorGuardado=localStorage.getItem('tiempo_'+boton.id);
-    if(valorGuardado) select.value=valorGuardado;
+    if(boton.tipo==='portal' && localStorage.getItem('tiempo_abrir')) select.value=localStorage.getItem('tiempo_abrir');
+    if(boton.tipo==='apto' && localStorage.getItem('tiempo_abrirApto')) select.value=localStorage.getItem('tiempo_abrirApto');
+    if(boton.tipo==='luz' && localStorage.getItem('tiempo_'+boton.id)) select.value=localStorage.getItem('tiempo_'+boton.id);
 
-    select.addEventListener('change',()=>localStorage.setItem('tiempo_'+boton.id,select.value));
-    div.appendChild(label); div.appendChild(select);
+    select.addEventListener('change',(e)=>{
+      const id=e.target.dataset.botonId;
+      const valor=e.target.value;
+      if(id==='abrir') localStorage.setItem('tiempo_abrir',valor);
+      else if(id==='abrirApto') localStorage.setItem('tiempo_abrirApto',valor);
+      else localStorage.setItem('tiempo_'+id,valor);
+    });
+
+    div.appendChild(label);
+    div.appendChild(select);
     configBotones.appendChild(div);
   });
 }
-  
-cerrarPopup.addEventListener('click',()=>popupConfig.style.display='none');
 
+cerrarPopup.addEventListener('click',()=>{popupConfig.style.display='none';});
 </script>
 </body>
 </html>
