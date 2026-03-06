@@ -344,30 +344,41 @@ validarAcceso();
 setInterval(validarAcceso,60000);
 
 // -------- EVENTOS PORTAL/APTO --------
+
+
 btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
+  const tiempo = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
   btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent = "Empuje la Puerta";
+
   enviarMQTT(`apartamento${a}/portal`,'ON');
+
   setTimeout(()=>{
     if(!btnAbrir.disabled){
       btnAbrir.classList.replace('amarillo','verde');
       btnAbrir.textContent = "Abrir Puerta Portal";
     }
-  },3000);
+  }, tiempo*1000);
 });
+
+
 btnAbrirApto.addEventListener('click', ()=>{
   if(btnAbrirApto.disabled) return;
+  const tiempo = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
   btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent = "Empuje la Puerta";
+
   enviarMQTT(`apartamento${a}/apto`,'ON');
+
   setTimeout(()=>{
     if(!btnAbrirApto.disabled){
       btnAbrirApto.classList.replace('amarillo','verde');
       btnAbrirApto.textContent = "Abrir Puerta Apartamento";
     }
-  },3000);
+  }, tiempo*1000);
 });
+
 
 // -------- POP-UP CONFIGURACIÓN --------
 const tituloPrincipal = document.getElementById('tituloPrincipal');
