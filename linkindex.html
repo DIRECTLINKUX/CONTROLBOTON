@@ -406,20 +406,43 @@ function mostrarPopupConfig(){
     {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
     ...botonesLuz.map((b,i)=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
   ];
-  const valoresPortalApto=[0,1,2,3,4];
-  const valoresLuces=[0,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+  const valoresPortalApto=[1,2,3,4];
+  const valoresLuces=[5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
 
   todosBotones.forEach(boton=>{
     const div=document.createElement('div'); div.style.display='flex'; div.style.alignItems='center';
     const label=document.createElement('span'); label.textContent=boton.nombre; label.style.width='200px';
     const select=document.createElement('select'); select.dataset.botonId=boton.id;
-    let opciones=(boton.tipo==='portal'||boton.tipo==='apto')?valoresPortalApto:valoresLuces;
+   
+  opciones.forEach(v=>{
     opciones.forEach(v=>{
-      const opt=document.createElement('option');
-      opt.value=(v==='Continuo')?999999:v;
-      opt.textContent=(v===60)?'1 Hora':(v===120)?'2 Horas':(v===180)?'3 Horas':(v===240)?'4 Horas':(v===300)?'5 Horas':(v===360)?'6 Horas':(v===420)?'7 Horas':(v===480)?'8 Horas':(v===540)?'9 Horas':(v===600)?'10 Horas':(v===999999)?'Continuo':v;
-      select.appendChild(opt);
-    });
+    const opt=document.createElement('option');
+    opt.value=(v==='Continuo')?999999:v;
+
+    // NUEVO: mostrar "segundos" para portal/apto
+    if(boton.tipo==='portal' || boton.tipo==='apto'){
+      opt.textContent = v + ' segundos';
+    }
+    // luces
+    else if(typeof v === 'number' && v < 60){
+      opt.textContent = v + ' minutos';
+    }
+    else if(v===60) opt.textContent='1 Hora';
+    else if(v===120) opt.textContent='2 Horas';
+    else if(v===180) opt.textContent='3 Horas';
+    else if(v===240) opt.textContent='4 Horas';
+    else if(v===300) opt.textContent='5 Horas';
+    else if(v===360) opt.textContent='6 Horas';
+    else if(v===420) opt.textContent='7 Horas';
+    else if(v===480) opt.textContent='8 Horas';
+    else if(v===540) opt.textContent='9 Horas';
+    else if(v===600) opt.textContent='10 Horas';
+    else if(v===999999) opt.textContent='Continuo';
+
+    select.appendChild(opt);
+  });
+
+ 
     const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
     if(valorGuardado) select.value=valorGuardado;
     select.addEventListener('change', ()=> localStorage.setItem('tiempo_'+boton.id, select.value));
