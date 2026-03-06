@@ -174,16 +174,10 @@ const username = partesMQTT[0];
 const password = partesMQTT[1];
 const broker = partesMQTT[2];
 const client = mqtt.connect(broker,{username,password});
-client.on('connect', ()=>{
-  console.log("✅ Conectado a HiveMQ Cloud");
-  // suscribir a todas las luces
-  botonesLuz.forEach((btn,index)=>{
-    const topic=`apartamento${a}/luz${index+1}`;
-    client.subscribe(topic,{qos:1});
-  });
-});
+client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', e=>console.log("❌ Error MQTT:",e));
 
+// Enviar mensaje MQTT
 function enviarMQTT(topic,accion){
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString(); 
@@ -332,21 +326,28 @@ botonesLuz.forEach((btn,index)=>{
   });
 });
 
-// recibir MQTT
+// -------- RECIBIR MQTT --------
 client.on('message',(topic,message)=>{
   botonesLuz.forEach((btn,index)=>{
     const luzTopic=`apartamento${a}/luz${index+1}`;
     if(topic===luzTopic){
       const estado=message.toString().toLowerCase();
-      if(estado==='on'){ 
-        btn.classList.replace('verde','amarillo');
-        btn.textContent=`Apagar Luz ${index+1}`;
-      } else if(estado==='off'){ 
+      if(estado==='off'){
         btn.classList.replace('amarillo','verde');
         btn.textContent=`Encender Luz ${index+1}`;
+      } else if(estado==='on'){
+        btn.classList.replace('verde','amarillo');
+        btn.textContent=`Encendida Luz ${index+1}`;
       }
     }
   });
+});
+
+// -------- SOLICITAR ESTADO LUCES AL INICIAR --------
+botonesLuz.forEach((btn,index)=>{
+  const luzTopic=`apartamento${a}/luz${index+1}`;
+  // Solicitar estado al ESP
+  enviarMQTT(luzTopic,'STATUS');
 });
 
 // -------- POPUP CONFIGURACIÓN --------
@@ -370,7 +371,7 @@ function mostrarPopupConfig(){
     {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
     ...botonesLuz.map((b,i)=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
   ];
-  const valoresPortalApto=[1,2,3]; // segundos
+  const valoresPortalApto=[1,2,3]; 
   const valoresLuces=[1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
 
   todosBotones.forEach(boton=>{
@@ -386,7 +387,7 @@ function mostrarPopupConfig(){
         opt.textContent=v+' segundos';
       } else {
         if(v==='Continuo') { opt.value=999999; opt.textContent='Continuo'; }
-        else if(v<60) { opt.value=v*60; opt.textContent=v+' minuto'+(v>1?'s':''); }
+        else if(v<60) { opt.value=v*60; opt.textContent=v+' minuto'+(v>1?'s':''); } 
         else if(v===60) opt.textContent='1 Hora';
         else if(v===120) opt.textContent='2 Horas';
         else if(v===180) opt.textContent='3 Horas';
@@ -397,7 +398,7 @@ function mostrarPopupConfig(){
         else if(v===480) opt.textContent='8 Horas';
         else if(v===540) opt.textContent='9 Horas';
         else if(v===600) opt.textContent='10 Horas';
-        opt.value = v*60;
+        opt.value = v*60; 
       }
       select.appendChild(opt);
     });
@@ -410,7 +411,9 @@ function mostrarPopupConfig(){
     configBotones.appendChild(div);
   });
 }
+  
 cerrarPopup.addEventListener('click',()=>popupConfig.style.display='none');
+
 </script>
 </body>
 </html>
