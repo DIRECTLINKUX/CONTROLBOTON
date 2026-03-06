@@ -361,8 +361,9 @@ function mostrarPopupConfig(){
     {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
     ...botonesLuz.map((b,i)=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
   ];
-  const valoresPortalApto=[1,2,3];
-  const valoresLuces=[5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+  const valoresPortalApto=[1,2,3]; // en segundos
+  // Nótese que añadí 1 minuto = 1*60 segundos y los demás son minutos
+  const valoresLuces=[1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
 
   todosBotones.forEach(boton=>{
     const div=document.createElement('div'); div.style.display='flex'; div.style.alignItems='center';
@@ -372,20 +373,24 @@ function mostrarPopupConfig(){
     valores=(boton.tipo==='portal'||boton.tipo==='apto')?valoresPortalApto:valoresLuces;
     valores.forEach(v=>{
       const opt=document.createElement('option');
-      opt.value=(v==='Continuo')?999999:v;
-      if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent=v+' segundos';
-      else if(typeof v==='number' && v<60) opt.textContent=v+' minutos';
-      else if(v===60) opt.textContent='1 Hora';
-      else if(v===120) opt.textContent='2 Horas';
-      else if(v===180) opt.textContent='3 Horas';
-      else if(v===240) opt.textContent='4 Horas';
-      else if(v===300) opt.textContent='5 Horas';
-      else if(v===360) opt.textContent='6 Horas';
-      else if(v===420) opt.textContent='7 Horas';
-      else if(v===480) opt.textContent='8 Horas';
-      else if(v===540) opt.textContent='9 Horas';
-      else if(v===600) opt.textContent='10 Horas';
-      else if(v===999999) opt.textContent='Continuo';
+      if(boton.tipo==='portal'||boton.tipo==='apto'){
+        opt.value=v; 
+        opt.textContent=v+' segundos';
+      } else {
+        if(v==='Continuo') { opt.value=999999; opt.textContent='Continuo'; }
+        else if(v<60) { opt.value=v*60; opt.textContent=v+' minuto'+(v>1?'s':''); } // minutos
+        else if(v===60) opt.textContent='1 Hora';
+        else if(v===120) opt.textContent='2 Horas';
+        else if(v===180) opt.textContent='3 Horas';
+        else if(v===240) opt.textContent='4 Horas';
+        else if(v===300) opt.textContent='5 Horas';
+        else if(v===360) opt.textContent='6 Horas';
+        else if(v===420) opt.textContent='7 Horas';
+        else if(v===480) opt.textContent='8 Horas';
+        else if(v===540) opt.textContent='9 Horas';
+        else if(v===600) opt.textContent='10 Horas';
+        opt.value = v*60; // convertir todo a segundos
+      }
       select.appendChild(opt);
     });
 
@@ -397,8 +402,10 @@ function mostrarPopupConfig(){
     configBotones.appendChild(div);
   });
 }
+  
 cerrarPopup.addEventListener('click',()=>popupConfig.style.display='none');
 
 </script>
 </body>
 </html>
+
