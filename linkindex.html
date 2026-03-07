@@ -330,7 +330,7 @@ function mostrarPopupConfig(){
     ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
   ];
   const valoresPortalApto = [1,2,3,4];
-  const valoresLuces = [5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+  const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
 
   todosBotones.forEach(boton=>{
     const div = document.createElement('div');
@@ -366,3 +366,4 @@ cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
 </script>
 </body>
 </html>
+
