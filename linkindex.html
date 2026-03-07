@@ -4,106 +4,26 @@
 <meta charset="UTF-8">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
-body{
-  font-family:Arial,sans-serif;
-  background:linear-gradient(to bottom,#d6d6d6,#bfbfbf);
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  margin:0;
-  padding-top:20px;
-}
-.cuadro{
-  background:white;
-  padding:3rem;
-  border-radius:15px;
-  box-shadow:0 20px 40px rgba(0,0,0,0.35);
-  text-align:center;
-  width:98%;
-  max-width:750px;
-}
+body{ font-family:Arial,sans-serif; background:linear-gradient(to bottom,#d6d6d6,#bfbfbf); display:flex; justify-content:center; align-items:flex-start; margin:0; padding-top:20px; }
+.cuadro{ background:white; padding:3rem; border-radius:15px; box-shadow:0 20px 40px rgba(0,0,0,0.35); text-align:center; width:98%; max-width:750px; }
 h2{ font-size:4.5rem; margin-bottom:1rem; }
-.fecha-hora{
-  display:flex;
-  font-size:2.5rem;
-  margin-bottom:1rem;
-  justify-content:center;
-  gap:1rem;
-}
-.fecha-hora-combinada{
-  display:grid;
-  grid-template-columns: auto auto auto;
-  row-gap:0.5rem;
-  font-size:2.5rem;
-}
-.panel{
-  border-radius:15px;
-  padding:1rem;
-  margin-bottom:2rem;
-  box-shadow:0 8px 18px rgba(0,0,0,0.25);
-}
-.titulo-panel{
-  font-size:2.5rem;
-  font-weight:bold;
-  padding:0.5rem 0;
-  margin-bottom:1rem;
-  border-bottom:2px solid #aaa;
-  background: rgba(255,255,255,0.4);
-  border-radius:8px;
-}
+.fecha-hora{ display:flex; font-size:2.5rem; margin-bottom:1rem; justify-content:center; gap:1rem; }
+.fecha-hora-combinada{ display:grid; grid-template-columns: auto auto auto; row-gap:0.5rem; font-size:2.5rem; }
+.panel{ border-radius:15px; padding:1rem; margin-bottom:2rem; box-shadow:0 8px 18px rgba(0,0,0,0.25); }
+.titulo-panel{ font-size:2.5rem; font-weight:bold; padding:0.5rem 0; margin-bottom:1rem; border-bottom:2px solid #aaa; background: rgba(255,255,255,0.4); border-radius:8px; }
 .panel.portal{ background:#e3f5ea; border:3px solid #145c2c; }
 .panel.apto{ background:#e8edff; border:3px solid #1a3f9e; }
 .panel.luces{ background:#fff3e6; border:3px solid #b36000; }
-.estadoPuerta{
-  font-weight:bold;
-  font-size:1.8rem;
-  margin-bottom:1rem;
-}
-.botones{
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:1rem;
-  margin-top:1rem;
-}
-button{
-  width:180px;
-  padding:1rem 0.5rem;
-  font-size:1.6rem;
-  border-radius:15px;
-  border:none;
-  cursor:pointer;
-  font-weight:bold;
-  color:white;
-  transition:0.3s;
-  white-space:pre-line; 
-}
+.estadoPuerta{ font-weight:bold; font-size:1.8rem; margin-bottom:1rem; }
+.botones{ display:flex; justify-content:center; flex-wrap:wrap; gap:1rem; margin-top:1rem; }
+button{ width:180px; padding:1rem 0.5rem; font-size:1.6rem; border-radius:15px; border:none; cursor:pointer; font-weight:bold; color:white; transition:0.3s; white-space:pre-line; }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
-
-#popupConfig {
-  display:none;
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:white;
-  padding:2rem;
-  border-radius:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.4);
-  z-index:9999; 
-  max-height:80%;
-  max-width:90%;
-  width:400px; 
-  overflow-y:auto;
-}
-#popupConfig select {
-  font-size: 1.5rem;
-  padding: 0.3rem;
-  margin-left: 1rem;
-}
+#popupConfig { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:2rem; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:9999; max-height:80%; max-width:90%; width:400px; overflow-y:auto; }
+#popupConfig select { font-size: 1.5rem; padding: 0.3rem; margin-left: 1rem; }
 #popupConfig button { cursor:pointer; }
+.encendido{ background:#f2c200 !important; color:black !important; }
 </style>
 </head>
 <body>
@@ -195,7 +115,67 @@ if(l>0){
   }
 }
 
-// -------- FUNCION CONECTAR MQTT --------
+// -------- FORMATEAR FECHAS --------
+function formatearFechaHora(f,h){
+  return {
+    fecha: f ? f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8) : '-',
+    hora: h ? h.slice(0,2)+':'+h.slice(2,4) : '-'
+  };
+}
+const inicio = formatearFechaHora(fe,he);
+const fin = formatearFechaHora(fs,hs);
+
+// Mostrar fechas
+document.getElementById('apartamento').textContent = a;
+document.getElementById('fechaInicio').textContent = inicio.fecha;
+document.getElementById('horaInicio').textContent = inicio.hora;
+document.getElementById('fechaFin').textContent = fin.fecha;
+document.getElementById('horaFin').textContent = fin.hora;
+
+// -------- VALIDAR ACCESO --------
+const btnAbrir = document.getElementById('abrir');
+const btnAbrirApto = document.getElementById('abrirApto');
+const estadoPortal = document.getElementById('estadoPortal');
+const estadoApto = document.getElementById('estadoApto');
+const estadoApartamento = document.getElementById('estadoApartamento');
+
+if(!localStorage.getItem('tiempo_abrir')) localStorage.setItem('tiempo_abrir',3);
+if(!localStorage.getItem('tiempo_abrirApto')) localStorage.setItem('tiempo_abrirApto',3);
+
+function validarAcceso(){
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = (ahora>=fIni && ahora<=fFin);
+
+  const aptoActivo = acceso && ca;
+  const portalActivo = acceso && cp;
+
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris',!portalActivo);
+  btnAbrirApto.disabled = !aptoActivo;
+  btnAbrirApto.classList.toggle('gris',!aptoActivo);
+
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo?'#0b7a2a':'#b30000';
+  estadoApto.textContent = aptoActivo?'ACTIVO':'INACTIVO';
+  estadoApto.style.color = aptoActivo?'#0b7a2a':'#b30000';
+  estadoApartamento.textContent = acceso?'Activo':'Fuera de horario';
+  estadoApartamento.style.color = acceso?'#0b7a2a':'#b30000';
+
+  botonesLuz.forEach((b,i)=>{
+    b.disabled = !aptoActivo;
+    if(!aptoActivo){
+      b.classList.remove('verde','amarillo');
+      b.classList.add('gris');
+      b.textContent = `Encender\nLuz ${i+1}`;
+    }
+  });
+}
+validarAcceso();
+setInterval(validarAcceso,60000);
+
+// -------- CONECTAR MQTT --------
 function conectarMQTT() {
   client = mqtt.connect(broker,{username,password});
 
@@ -205,8 +185,6 @@ function conectarMQTT() {
 
     for(let i=1;i<=l;i++){
       client.subscribe(`apartamento${a}/luz${i}`);
-      console.log("📡 Suscrito a:",`apartamento${a}/luz${i}`);
-      // Solicitar estado al conectar
       enviarMQTT(`apartamento${a}/luz${i}`,'STATUS');
     }
   });
@@ -215,7 +193,6 @@ function conectarMQTT() {
   client.on('close', ()=>{ clienteConectado=false; console.log("⚠️ Conexión MQTT cerrada"); });
   client.on('offline', ()=>{ clienteConectado=false; console.log("⚠️ MQTT offline"); });
 
-  // -------- RECIBIR MENSAJES MQTT --------
   client.on('message',(topic,message)=>{
     botonesLuz.forEach((btn,index)=>{
       const luzTopic = `apartamento${a}/luz${index+1}`;
@@ -233,14 +210,13 @@ function conectarMQTT() {
   });
 }
 
-// Llamada inicial
 conectarMQTT();
 
-// -------- FUNCION ENVIAR MQTT --------
+// -------- ENVIAR MQTT --------
 function enviarMQTT(topic,accion){
   if(!clienteConectado) return;
   const ahora = new Date();
-  const fechaHoraEnvio = ahora.toISOString(); 
+  const fechaHoraEnvio = ahora.toISOString();
   let duracion_rele=0;
   if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir'))||3;
   else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto'))||3;
@@ -248,17 +224,13 @@ function enviarMQTT(topic,accion){
     const n = topic.match(/luz(\d+)/)[1];
     duracion_rele = parseInt(localStorage.getItem('tiempo_'+n))||36000;
   }
-  const mensaje = {
-    id:ahora.getTime(), accion, clave:k, apartamento:a,
-    fechaAlta:fa, fechaEntrada:fe, horaEntrada:he,
-    fechaFin:fs, horaFin:hs, fechaHoraEnvio, duracion_rele
-  };
-  client.publish(topic,JSON.stringify(mensaje),{qos:1}, err=>{if(err) console.log(err);});
+  const mensaje = { id:ahora.getTime(), accion, clave:k, apartamento:a, fechaAlta:fa, fechaEntrada:fe, horaEntrada:he, fechaFin:fs, horaFin:hs, fechaHoraEnvio, duracion_rele };
+  client.publish(topic,JSON.stringify(mensaje),{qos:1});
 }
 
-// -------- RESTO DEL CÓDIGO (fechas, validaciones, botones portal/apto y popup) --------
-// ... Mantén exactamente todo igual que tu última versión ...
-
+// -------- RESTO DEL CÓDIGO (PORTAL/APTO, BOTONES LUCES, POPUP) --------
+// Mantener exactamente tu código actual para botones y popup
 </script>
 </body>
 </html>
+
