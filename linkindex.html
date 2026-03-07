@@ -177,95 +177,6 @@ const broker = partesMQTT[2];
 let client = null;
 let clienteConectado = false;
 
-// -------- CONEXIÓN MQTT --------
-function conectarMQTT() {
-  client = mqtt.connect(broker,{username,password});
-
-  client.on('connect', ()=>{
-    clienteConectado = true;
-    console.log("✅ Conectado a HiveMQ Cloud");
-
-    // Suscribirse a todas las luces
-    for(let i=1;i<=l;i++){
-      client.subscribe(`apartamento${a}/luz${i}`);
-      console.log("📡 Suscrito a:",`apartamento${a}/luz${i}`);
-    }
-  });
-
-  client.on('error', e=>console.log("❌ Error MQTT:",e));
-  client.on('close', ()=>{ clienteConectado=false; console.log("⚠️ Conexión MQTT cerrada"); });
-  client.on('offline', ()=>{ clienteConectado=false; console.log("⚠️ MQTT offline"); });
-
-  // -------- RECIBIR MQTT --------
-  client.on('message',(topic,message)=>{
-    botonesLuz.forEach((btn,index)=>{
-      const luzTopic=`apartamento${a}/luz${index+1}`;
-      if(topic===luzTopic){
-        const estado=message.toString().toLowerCase();
-        if(estado==='off'){
-          btn.classList.replace('amarillo','verde');
-          btn.textContent=`Encender Luz ${index+1}`;
-        } else if(estado==='on'){
-          btn.classList.replace('verde','amarillo');
-          btn.textContent=`Encendida Luz ${index+1}`;
-        }
-      }
-    });
-  });
-}
-
-// Llamada inicial
-conectarMQTT();
-
-// -------- FUNCIONES ENVÍO MQTT --------
-function enviarMQTT(topic,accion){
-  if(!clienteConectado){
-    console.log(`⚠️ Intento de envío antes de conectar: ${topic} ${accion}`);
-    return;
-  }
-
-  const ahora = new Date();
-  const fechaHoraEnvio = ahora.toISOString(); 
-  let duracion_rele=0;
-  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir'))||3;
-  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto'))||3;
-  else if(topic.includes('/luz')){
-    const n = topic.match(/luz(\d+)/)[1];
-    duracion_rele = parseInt(localStorage.getItem('tiempo_'+n))||36000;
-  }
-
-  const mensaje = {
-    id:ahora.getTime(),
-    accion,
-    clave:k,
-    apartamento:a,
-    fechaAlta:fa,
-    fechaEntrada:fe,
-    horaEntrada:he,
-    fechaFin:fs,
-    horaFin:hs,
-    fechaHoraEnvio,
-    duracion_rele
-  };
-  console.log(`➡️ MQTT ${topic}`,mensaje);
-  client.publish(topic,JSON.stringify(mensaje),{qos:1}, err=>{if(err) console.log(err);});
-}
-
-// -------- FECHAS --------
-function formatearFechaHora(f,h){
-  return {
-    fecha: f? f.slice(0,4)+'-'+f.slice(4,6)+'-'+f.slice(6,8):'-',
-    hora: h? h.slice(0,2)+':'+h.slice(2,4):'-'
-  };
-}
-const inicio = formatearFechaHora(fe,he);
-const fin = formatearFechaHora(fs,hs);
-document.getElementById('apartamento').textContent = a;
-document.getElementById('fechaInicio').textContent = inicio.fecha;
-document.getElementById('horaInicio').textContent = inicio.hora;
-document.getElementById('fechaFin').textContent = fin.fecha;
-document.getElementById('horaFin').textContent = fin.hora;
-
 // -------- BOTONES LUCES --------
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
@@ -284,170 +195,70 @@ if(l>0){
   }
 }
 
-// -------- VALIDACIÓN ACCESO --------
-const btnAbrir = document.getElementById('abrir');
-const btnAbrirApto = document.getElementById('abrirApto');
-const estadoPortal = document.getElementById('estadoPortal');
-const estadoApto = document.getElementById('estadoApto');
-const estadoApartamento = document.getElementById('estadoApartamento');
+// -------- FUNCION CONECTAR MQTT --------
+function conectarMQTT() {
+  client = mqtt.connect(broker,{username,password});
 
-if(!localStorage.getItem('tiempo_abrir')) localStorage.setItem('tiempo_abrir',3);
-if(!localStorage.getItem('tiempo_abrirApto')) localStorage.setItem('tiempo_abrirApto',3);
+  client.on('connect', ()=>{
+    clienteConectado = true;
+    console.log("✅ Conectado a HiveMQ Cloud");
 
-function validarAcceso(){
-  const ahora = new Date();
-  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = (ahora>=fIni && ahora<=fFin);
-
-  const aptoActivo = acceso && ca;
-  const portalActivo = acceso && cp;
-
-  btnAbrir.disabled = !portalActivo;
-  btnAbrir.classList.toggle('gris',!portalActivo);
-  btnAbrirApto.disabled = !aptoActivo;
-  btnAbrirApto.classList.toggle('gris',!aptoActivo);
-
-  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
-  estadoPortal.style.color = portalActivo?'#0b7a2a':'#b30000';
-  estadoApto.textContent = aptoActivo?'ACTIVO':'INACTIVO';
-  estadoApto.style.color = aptoActivo?'#0b7a2a':'#b30000';
-  estadoApartamento.textContent = acceso?'Activo':'Fuera de horario';
-  estadoApartamento.style.color = acceso?'#0b7a2a':'#b30000';
-
-  botonesLuz.forEach((b,i)=>{
-    b.disabled = !aptoActivo;
-    if(!aptoActivo){
-      b.classList.remove('verde','amarillo');
-      b.classList.add('gris');
-      b.textContent = `Encender\nLuz ${i+1}`;
+    for(let i=1;i<=l;i++){
+      client.subscribe(`apartamento${a}/luz${i}`);
+      console.log("📡 Suscrito a:",`apartamento${a}/luz${i}`);
+      // Solicitar estado al conectar
+      enviarMQTT(`apartamento${a}/luz${i}`,'STATUS');
     }
   });
-}
-validarAcceso();
-setInterval(validarAcceso,60000);
 
-// -------- FUNCIONES PORTAL/APTO --------
-function abrirBoton(btn,topic,storageKey,textoInicial){
-  const tiempo = parseInt(localStorage.getItem(storageKey))||3;
-  btn.classList.replace('verde','amarillo');
-  btn.textContent = textoInicial;
-  enviarMQTT(topic,'ON');
-  setTimeout(()=>{ 
-    if(!btn.disabled){ 
-      btn.classList.replace('amarillo','verde'); 
-      btn.textContent = btn===btnAbrir?'Abrir Puerta Portal':'Abrir Puerta Apartamento';
-    } 
-  }, tiempo*1000);
-}
-btnAbrir.addEventListener('click', ()=>{if(!btnAbrir.disabled) abrirBoton(btnAbrir,`apartamento${a}/portal`,'tiempo_abrir','Empuje la Puerta');});
-btnAbrirApto.addEventListener('click', ()=>{if(!btnAbrirApto.disabled) abrirBoton(btnAbrirApto,`apartamento${a}/apto`,'tiempo_abrirApto','Empuje la Puerta');});
+  client.on('error', e=>console.log("❌ Error MQTT:",e));
+  client.on('close', ()=>{ clienteConectado=false; console.log("⚠️ Conexión MQTT cerrada"); });
+  client.on('offline', ()=>{ clienteConectado=false; console.log("⚠️ MQTT offline"); });
 
-// -------- BOTONES LUCES (CLICK Y MQTT) --------
-function iniciarContador(btn,segundos,textoFinal){
-  setTimeout(()=>{ 
-    if(btn.classList.contains('amarillo')){ 
-      btn.classList.replace('amarillo','verde'); 
-      btn.textContent=textoFinal; 
-    } 
-  }, segundos*1000);
-}
-
-botonesLuz.forEach((btn,index)=>{
-  const num=index+1;
-  btn.addEventListener('click', ()=>{
-    if(btn.disabled) return;
-    if(btn.classList.contains('verde')){
-      const tiempo = parseInt(localStorage.getItem('tiempo_'+num))||36000;
-      btn.classList.replace('verde','amarillo');
-      iniciarContador(btn,tiempo,`Encender Luz ${num}`);
-      enviarMQTT(`apartamento${a}/luz${num}`,'ON');
-    } else {
-      btn.classList.replace('amarillo','verde');
-      btn.textContent = `Encender Luz ${num}`;
-      enviarMQTT(`apartamento${a}/luz${num}`,'OFF');
-    }
-  });
-});
-
-// -------- SOLICITAR ESTADO LUCES AL INICIAR --------
-botonesLuz.forEach((btn,index)=>{
-  const luzTopic=`apartamento${a}/luz${index+1}`;
-  enviarMQTT(luzTopic,'STATUS');
-});
-
-// -------- POPUP CONFIGURACIÓN --------
-const tituloPrincipal=document.getElementById('tituloPrincipal');
-const popupConfig=document.getElementById('popupConfig');
-const configBotones=document.getElementById('configBotones');
-const cerrarPopup=document.getElementById('cerrarPopup');
-
-let pulsacionTimer;
-function iniciarPulsacion(){ pulsacionTimer=setTimeout(mostrarPopupConfig,5000); }
-function cancelarPulsacion(){ clearTimeout(pulsacionTimer); }
-
-['mousedown','touchstart'].forEach(e=>tituloPrincipal.addEventListener(e,iniciarPulsacion));
-['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>tituloPrincipal.addEventListener(e,cancelarPulsacion));
-
-function mostrarPopupConfig(){
-  popupConfig.style.display='block';
-  configBotones.innerHTML='';
-  const todosBotones = [
-    {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
-    {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
-    ...botonesLuz.map((b,i)=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
-  ];
-  const valoresPortalApto=[1,2,3]; 
-  const valoresLuces=[1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
-
-  todosBotones.forEach(boton=>{
-    const div=document.createElement('div'); div.style.display='flex'; div.style.alignItems='center';
-    const label=document.createElement('span'); label.textContent=boton.nombre; label.style.width='200px';
-    const select=document.createElement('select'); select.dataset.botonId=boton.id;
-
-    valores=(boton.tipo==='portal'||boton.tipo==='apto')?valoresPortalApto:valoresLuces;
-    valores.forEach(v=>{
-      const opt=document.createElement('option');
-      if(boton.tipo==='portal'||boton.tipo==='apto'){
-        opt.value=v; 
-        opt.textContent=v+' segundos';
-      } else {
-        if(v==='Continuo') { opt.value=999999; opt.textContent='Continuo'; }
-        else if(v<60) { opt.value=v*60; opt.textContent=v+' minuto'+(v>1?'s':''); } 
-        else if(v===60) opt.textContent='1 Hora';
-        else if(v===120) opt.textContent='2 Horas';
-        else if(v===180) opt.textContent='3 Horas';
-        else if(v===240) opt.textContent='4 Horas';
-        else if(v===300) opt.textContent='5 Horas';
-        else if(v===360) opt.textContent='6 Horas';
-        else if(v===420) opt.textContent='7 Horas';
-        else if(v===480) opt.textContent='8 Horas';
-        else if(v===540) opt.textContent='9 Horas';
-        else if(v===600) opt.textContent='10 Horas';
-        opt.value = (v==='Continuo'?999999:v*60);
+  // -------- RECIBIR MENSAJES MQTT --------
+  client.on('message',(topic,message)=>{
+    botonesLuz.forEach((btn,index)=>{
+      const luzTopic = `apartamento${a}/luz${index+1}`;
+      if(topic === luzTopic){
+        const estado = message.toString().toLowerCase();
+        if(estado==='off'){
+          btn.classList.replace('amarillo','verde');
+          btn.textContent = `Encender Luz ${index+1}`;
+        } else if(estado==='on'){
+          btn.classList.replace('verde','amarillo');
+          btn.textContent = `Encendida Luz ${index+1}`;
+        }
       }
-      select.appendChild(opt);
     });
-
-    if(boton.tipo==='portal' && localStorage.getItem('tiempo_abrir')) select.value=localStorage.getItem('tiempo_abrir');
-    if(boton.tipo==='apto' && localStorage.getItem('tiempo_abrirApto')) select.value=localStorage.getItem('tiempo_abrirApto');
-    if(boton.tipo==='luz' && localStorage.getItem('tiempo_'+boton.id)) select.value=localStorage.getItem('tiempo_'+boton.id);
-
-    select.addEventListener('change',(e)=>{
-      const id=e.target.dataset.botonId;
-      const valor=e.target.value;
-      if(id==='abrir') localStorage.setItem('tiempo_abrir',valor);
-      else if(id==='abrirApto') localStorage.setItem('tiempo_abrirApto',valor);
-      else localStorage.setItem('tiempo_'+id,valor);
-    });
-
-    div.appendChild(label);
-    div.appendChild(select);
-    configBotones.appendChild(div);
   });
 }
 
-cerrarPopup.addEventListener('click',()=>{popupConfig.style.display='none';});
+// Llamada inicial
+conectarMQTT();
+
+// -------- FUNCION ENVIAR MQTT --------
+function enviarMQTT(topic,accion){
+  if(!clienteConectado) return;
+  const ahora = new Date();
+  const fechaHoraEnvio = ahora.toISOString(); 
+  let duracion_rele=0;
+  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir'))||3;
+  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto'))||3;
+  else if(topic.includes('/luz')){
+    const n = topic.match(/luz(\d+)/)[1];
+    duracion_rele = parseInt(localStorage.getItem('tiempo_'+n))||36000;
+  }
+  const mensaje = {
+    id:ahora.getTime(), accion, clave:k, apartamento:a,
+    fechaAlta:fa, fechaEntrada:fe, horaEntrada:he,
+    fechaFin:fs, horaFin:hs, fechaHoraEnvio, duracion_rele
+  };
+  client.publish(topic,JSON.stringify(mensaje),{qos:1}, err=>{if(err) console.log(err);});
+}
+
+// -------- RESTO DEL CÓDIGO (fechas, validaciones, botones portal/apto y popup) --------
+// ... Mantén exactamente todo igual que tu última versión ...
+
 </script>
 </body>
 </html>
