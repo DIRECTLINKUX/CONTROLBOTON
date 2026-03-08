@@ -200,11 +200,32 @@ if(decoded['m']){
   }
 }
 
-// ---------- MOSTRAR CT ORIGINAL ----------
-console.log("🔹 CT recibido en la URL (sin decodificar):", decoded['ct']);
-// Decodificar CT
-const ct = decoded['ct'] || '';
-console.log("🔹 CT después de procesar (decodificado/trim):", ct);
+// ---------- MOSTRAR CT ORIGINAL Y DECODIFICAR ----------
+console.log("🔹 CT recibido en la URL (sin decodificar):", decoded['ct'] || 'VACÍO');
+
+// Función para decodificar Base64 URL-safe
+function base64urlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/'); // revertir URL-safe
+  while (str.length % 4) str += '='; // padding
+  return atob(str); // devuelve string decodificado
+}
+
+// Decodificar CT correctamente
+let ct = '';
+if(decoded['ct']) {
+  try {
+    ct = base64urlDecode(decoded['ct']).trim();
+  } catch(e) {
+    console.error("❌ Error decodificando CT:", e);
+  }
+}
+
+console.log("🔹 CT después de decodificar Base64:", ct || 'VACÍO');
+
+
+
+
+
 
 // -------- MQTT --------
 const [username,password,broker] = m.split('*');
@@ -214,27 +235,29 @@ client.on('error', err=>console.log("❌ Error MQTT:",err));
 
 
 
-function enviarMQTT(topic, accion){
- if(!ct || ct.trim() === '') {
+function enviarMQTT(topic, accion) { 
+  if (!ct || ct.trim() === '') {
     console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-    return; // sale sin enviar nada
+    return; // salir sin enviar nada
   }
 
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString();
 
   // Anteponer CT al topic si no lo tiene
-  if(!topic.startsWith(ct)){
-    topic = `${ct}${topic.startsWith('/') ? '' : '/'}${topic}`;
+  if (!topic.startsWith(ct)) {
+    // Asegurarse de que haya exactamente un '/' entre CT y topic
+    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
+    topic = `${ct}${separador}${topic}`;
   }
 
   // Determinar duración según tipo de dispositivo
   let duracion_rele = 0;
-  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-  else if(topic.includes('/luz')) {
+  if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  else if (topic.includes('/luz')) {
     const num = topic.match(/luz(\d+)/)[1];
-    duracion_rele = parseInt(localStorage.getItem('tiempo_'+num)) || 36000;
+    duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
   }
 
   // Crear mensaje
@@ -253,10 +276,15 @@ function enviarMQTT(topic, accion){
   };
 
   console.log(`➡️ MQTT: ${topic}`, mensaje);
-  client.publish(topic, JSON.stringify(mensaje), {qos:1}, err => {
-    if(err) console.log("❌ Error al publicar:", err);
+  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
+    if (err) console.log("❌ Error al publicar:", err);
   });
 }
+
+
+
+
+
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
