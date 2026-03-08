@@ -200,9 +200,11 @@ if(decoded['m']){
   }
 }
 
+// ---------- MOSTRAR CT ORIGINAL ----------
+console.log("🔹 CT recibido en la URL (sin decodificar):", decoded['ct']);
 // Decodificar CT
 const ct = decoded['ct'] || '';
-
+console.log("🔹 CT después de procesar (decodificado/trim):", ct);
 
 // -------- MQTT --------
 const [username,password,broker] = m.split('*');
@@ -213,6 +215,11 @@ client.on('error', err=>console.log("❌ Error MQTT:",err));
 
 
 function enviarMQTT(topic, accion){
+ if(!ct || ct.trim() === '') {
+    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
+    return; // sale sin enviar nada
+  }
+
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString();
 
