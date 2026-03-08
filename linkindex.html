@@ -190,15 +190,19 @@ const l = parseInt(decoded['l'])||0;
 const k = decoded['k'];
 const fa = decoded['fa'];
 
-// Decodificar MQTT si existe
+// Decodificar CAMPO MQTT si existe 
 let m = '';
 if(decoded['m']){
-  try{
+  console.log("🔹 m recibido en la URL (Base64URL):", decoded['m']); // Antes de decodificar
+  try {
     m = base64urlDecode(decoded['m']);
+    console.log("🔹 m después de decodificar Base64URL:", m); // Después de decodificar
   } catch(e){
     console.error("❌ Error decodificando MQTT:", e);
   }
 }
+
+
 
 // ---------- MOSTRAR CT ORIGINAL Y DECODIFICAR ----------
 console.log("🔹 CT recibido en la URL (sin decodificar):", decoded['ct'] || 'VACÍO');
