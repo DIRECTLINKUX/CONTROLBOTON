@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<OCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -255,6 +255,15 @@ function enviarMQTT(topic, accion) {
     topic = `${ct}${separador}${topic}`;
   }
 
+  // Decodificar k justo antes de enviarlo
+    let kNormal = k;
+    try {
+      kNormal = base64urlDecode(k);  // aquí conviertes Base64 -> normal
+    } catch(e){
+      console.error("❌ Error decodificando k:", e);
+    }
+
+
   // Determinar duración según tipo de dispositivo
   let duracion_rele = 0;
   if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
@@ -489,4 +498,4 @@ function mostrarPopupConfig(){
 cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
 </script>
 </body>
-</html>
+</html>!D
