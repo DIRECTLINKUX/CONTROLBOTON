@@ -179,16 +179,17 @@ try {
 }
 
 // Extraer los parámetros ya "normales"
-const a = Math.min(Math.max(parseInt(decoded['a']),1),100) || 1;
-const fe = decoded['fe'];
-const he = decoded['he'];
-const fs = decoded['fs'];
-const hs = decoded['hs'];
-const cp = decoded['cp']==='1';
-const ca = decoded['ca']==='1';
-const l = parseInt(decoded['l'])||0;
-const k = decoded['k'];
-const fa = decoded['fa'];
+const a   = Math.min(Math.max(parseInt(decoded['a']),1),100) || 1;
+const ct  = decoded['ct'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const k   = decoded['k'];
+const fa  = decoded['fa'];
 
 // Decodificar CAMPO si existe 
 let m1 = '';
