@@ -178,6 +178,10 @@ try {
   console.error("❌ Error decodificando link:", e);
 }
 
+
+
+Generar k con SHA256 (claveGlobal + numeroApto + fechaAlta + fi+hi+ff+hf + portal + apto + luces) ---
+
 // Extraer los parámetros ya "normales"
 const a   = Math.min(Math.max(parseInt(decoded['a']),1),100) || 1;
 const ct  = decoded['ct'];
@@ -286,6 +290,9 @@ function enviarMQTT(topic, accion) {
     horaEntrada: he,
     fechaFin: fs,
     horaFin: hs,
+    cp_portal: cp,
+    ca_apto: ca,
+    l_luz: l,
     fechaHoraEnvio,
     duracion_rele
   };
