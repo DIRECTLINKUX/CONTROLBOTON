@@ -230,27 +230,8 @@ if(decoded['m3']){
 }
 
 
-// ---------- MOSTRAR CT ORIGINAL Y DECODIFICAR ----------
-console.log("🔹 CT recibido en la URL (sin decodificar):", decoded['ct'] || 'VACÍO');
-
-// Función para decodificar Base64 URL-safe
-function base64urlDecode(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/'); // revertir URL-safe
-  while (str.length % 4) str += '='; // padding
-  return atob(str); // devuelve string decodificado
-}
-
-// Decodificar CT correctamente
-let ct = '';
-if(decoded['ct']) {
-  try {
-    ct = base64urlDecode(decoded['ct']).trim();
-  } catch(e) {
-    console.error("❌ Error decodificando CT:", e);
-  }
-}
-
-console.log("🔹 CT después de decodificar Base64:", ct || 'VACÍO');
+// ---------- MOSTRAR CT----------
+console.log("🔹 CT :", ct || 'VACÍO');
 
 // -------- MQTT br us pa--------
 const client = mqtt.connect(m3,{m1,m2});
