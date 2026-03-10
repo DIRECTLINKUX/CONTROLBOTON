@@ -224,7 +224,7 @@ if(decoded['m3']){
     // decodificar Base64URL
     let brokerDecodificado = base64urlDecode(decoded['m3']);
     // reconstruir URL MQTT
-    m3 = "wss://" + brokerDecodificado + ".s1.eu.hivemq.cloud";
+    m3 = "wss://" + brokerDecodificado +  ".s1.eu.hivemq.cloud:8884/mqtt";
     console.log("🔹 m3 con direccion después de decodificar m3 Base64URL:", m3);
   } catch(e){
     console.error("❌ Error decodificando MQTT:", e);
@@ -236,7 +236,8 @@ if(decoded['m3']){
 console.log("🔹 CT :", ct || 'VACÍO');
 
 // -------- MQTT br us pa--------
-const client = mqtt.connect(m3,{m1,m2});
+
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
 
@@ -258,7 +259,7 @@ function enviarMQTT(topic, accion) {
     topic = `${ct}${separador}${topic}`;
   }
 
-  // Decodificar k (clave secreta) justo antes de enviarlo
+  // Decodificar k justo antes de enviarlo
     let kNormal = k;
     try {
       kNormal = base64urlDecode(k);  // aquí conviertes Base64 -> normal
@@ -279,6 +280,7 @@ function enviarMQTT(topic, accion) {
   // Crear mensaje
   const mensaje = {
     id: ahora.getTime(),
+    fechaHoraEnvio,
     accion,
     clave: k,
     apartamento: a,
@@ -290,7 +292,6 @@ function enviarMQTT(topic, accion) {
     cp_portal: cp,
     ca_apto: ca,
     l_luz: l,
-    fechaHoraEnvio,
     duracion_rele
   };
 
