@@ -168,7 +168,11 @@ const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
 let decoded = {};
 try {
-  const paramStr = base64urlDecode(d); // paso 1: todo el string en normal
+ 
+ const paramStr = base64urlDecode(decodeURIComponent(d));
+
+
+
   const pares = paramStr.split('&');
   pares.forEach(p => {
     const [key,val] = p.split('=');
@@ -200,13 +204,13 @@ let m3 = decoded['m3'];
 // reconstruir URL MQTT
 m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
 
+
 console.log("MQTT URL:", m3);
 console.log("MQTT USER:", m1);
 console.log("MQTT PASS:", m2);
 
 
 
-  
 // -------- MQTT br us pa--------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
@@ -470,4 +474,3 @@ cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
 </script>
 </body>
 </html>!D
-
