@@ -192,49 +192,13 @@ const cp  = decoded['cp']==='1';
 const ca  = decoded['ca']==='1';
 const l   = parseInt(decoded['l'])||0;
 
-// Decodificar CAMPO si existe 
-let m1 = '';
-if(decoded['m1']){
-  console.log("🔹 m1 recibido en la URL (Base64URL):", decoded['m1']); // Antes de decodificar
-  try {
-    m1 = base64urlDecode(decoded['m1']);
-    console.log("🔹 m1 después de decodificar Base64URL:", m1); // Después de decodificar
-  } catch(e){
-    console.error("❌ Error decodificando MQTT:", e);
-  }
-}
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+const m4  = decoded['m3'];
 
-// Decodificar CAMPO si existe 
-let m2 = '';
-if(decoded['m2']){
-  console.log("🔹 m2 recibido en la URL (Base64URL):", decoded['m2']); // Antes de decodificar
-  try {
-    m2 = base64urlDecode(decoded['m2']);
-    console.log("🔹 m1 después de decodificar Base64URL:", m2); // Después de decodificar
-  } catch(e){
-    console.error("❌ Error decodificando MQTT:", e);
-  }
-}
-
-// Decodificar CAMPO si existe 
-let m3 = '';
-if(decoded['m3']){
-  console.log("🔹 m3 recibido en la URL (Base64URL):", decoded['m3']); 
-  try {
-    // decodificar Base64URL
-    let brokerDecodificado = base64urlDecode(decoded['m3']);
-    // reconstruir URL MQTT
-    m3 = "wss://" + brokerDecodificado +  ".s1.eu.hivemq.cloud:8884/mqtt";
-    console.log("🔹 m3 con direccion después de decodificar m3 Base64URL:", m3);
-  } catch(e){
-    console.error("❌ Error decodificando MQTT:", e);
-  }
-}
-
-
-// ---------- MOSTRAR CT----------
-console.log("🔹 CT :", ct || 'VACÍO');
-
+// reconstruir URL MQTT
+   m3 = "wss://" + m4 +  ".s1.eu.hivemq.cloud:8884/mqtt";
+ 
 // -------- MQTT br us pa--------
 
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
