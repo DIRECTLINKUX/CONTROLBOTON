@@ -30,12 +30,16 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   justify-content:center;
   gap:1rem;
 }
-.fecha-hora-combinada{
-  display:grid;
-  grid-template-columns: 140px 220px 120px;
-  row-gap:0.5rem;
+
+.fecha-hora-combinada #inicioLinea {
+  display:flex;
+  gap:0.5rem;
   font-size:2.5rem;
+  align-items:center;
 }
+
+
+
 .panel{
   border-radius:15px;
   padding:1rem;
@@ -97,14 +101,20 @@ Apartamento: <span id="apartamento"></span>
 <span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
+
 <div class="fecha-hora fecha-hora-combinada">
-<span>Inicio:</span>
-<span id="fechaInicio"></span>
-<span id="horaInicio"></span>
-<span>Fin:</span>
-<span id="fechaFin"></span>
-<span id="horaFin"></span>
+  <div id="inicioLinea">
+    <span>Inicio:</span>
+    <span id="fechaInicio"></span>
+    <span id="horaInicio"></span>
+  </div>
+  <span>Fin:</span>
+  <span id="fechaFin"></span>
+  <span id="horaFin"></span>
 </div>
+
+
+
 
 <div class="panel portal">
 <div class="titulo-panel">Puerta Portal</div>
