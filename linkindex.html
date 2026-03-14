@@ -477,6 +477,14 @@ document.addEventListener('DOMContentLoaded', () => {
       label.style.width='200px';
       const select = document.createElement('select');
       select.dataset.botonId = boton.id;
+      select.style.fontSize = '1.6rem';
+      select.style.padding = '0.4rem';
+      select.style.height = '45px';
+      select.style.width = '180px';
+
+
+
+
       const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
 
       opciones.forEach(v=>{
@@ -513,7 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
     <div id="configBotones" style="margin-top:1rem;"></div>
   </div>
 </div>
-
 
 
 
