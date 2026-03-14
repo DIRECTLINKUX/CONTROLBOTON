@@ -85,6 +85,7 @@ button{
 </head>
 
 <body>
+
 <div class="cuadro">
 
 <button id="tituloPrincipal" style="font-size:4.5rem;width:100%;background:linear-gradient(to bottom,#1f7a3a,#0f4f23);color:white;border:none;border-radius:15px;padding:1rem;">
@@ -126,19 +127,12 @@ Apartamento: <span id="apartamento"></span>
 <div class="botones" id="botonesLuces"></div>
 </div>
 
-<!-- POPUP CONFIG -->
-<div id="popupConfig" style="display:none;position:fixed;top:10%;left:50%;transform:translateX(-50%);background:white;padding:2rem;border-radius:15px;box-shadow:0 10px 20px rgba(0,0,0,0.3);z-index:1000;">
-<h2>Configuración</h2>
-<div id="configBotones"></div>
-<button id="cerrarPopup" style="margin-top:1rem;padding:0.5rem 1rem;font-size:1.5rem;">Cerrar</button>
-</div>
-
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', ()=>{
 
-// ================= DECODIFICAR PARÁMETRO d =================
+// -------- DECODIFICAR PARÁMETRO d --------
+
 function base64urlDecode(str){
   str = str.replace(/-/g,'+').replace(/_/g,'/');
   while(str.length % 4) str += '=';
@@ -150,17 +144,25 @@ let d = params.get('d') || '';
 let decoded = {};
 
 try{
+
   const d_url = decodeURIComponent(d);
   const base = base64urlDecode(d_url);
   const paramStr = decodeURIComponent(base);
+
   paramStr.split('&').forEach(p=>{
     const [key,val] = p.split('=');
     decoded[key] = val || '';
   });
-  console.log("PARAMS DECODIFICADOS:",decoded);
-}catch(e){console.error("❌ Error decodificando link:",e);}
 
-// ================= EXTRAER PARÁMETROS =================
+  console.log("PARAMS DECODIFICADOS:",decoded);
+
+}catch(e){
+  console.error("❌ Error decodificando link:",e);
+}
+
+
+// -------- EXTRAER PARÁMETROS --------
+
 const k   = decoded['k'];
 const a   = decoded['a'];
 const ct  = decoded['ct'];
@@ -172,54 +174,94 @@ const hs  = decoded['hs'];
 const cp  = decoded['cp']==='1';
 const ca  = decoded['ca']==='1';
 const l   = parseInt(decoded['l'])||0;
+
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
-let m3 = decoded['m3'] || '';
-if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-console.log("MQTT URL:", m3,"USER:",m1,"PASS:",m2);
 
-// ================= CONEXIÓN MQTT =================
-const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout:3000});
+let m3 = decoded['m3'] || '';
+
+
+// -------- RECONSTRUIR MQTT --------
+
+if(m3){
+m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+}
+
+console.log("MQTT URL:", m3);
+console.log("MQTT USER:", m1);
+console.log("MQTT PASS:", m2);
+
+
+// -------- CONEXIÓN MQTT --------
+// -------- MQTT br us pa--------
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
 
-function enviarMQTT(topic, accion){
-  if (!ct || ct.trim()===''){ console.error("❌ ERROR: CT no definido"); return; }
+
+
+function enviarMQTT(topic, accion) { 
+  if (!ct || ct.trim() === '') {
+    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
+    return; // salir sin enviar nada
+  }
+
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString();
-  if(!topic.startsWith(ct)){
-    const sep = (ct.endsWith('/') || topic.startsWith('/'))?'':'/';
-    topic = ct+sep+topic;
+
+  // Anteponer CT al topic si no lo tiene
+  if (!topic.startsWith(ct)) {
+    // Asegurarse de que haya exactamente un '/' entre CT y topic
+    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
+    topic = `${ct}${separador}${topic}`;
   }
+
+
+  // Determinar duración según tipo de dispositivo
   let duracion_rele = 0;
-  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir'))||3;
-  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto'))||3;
-  else if(topic.includes('/luz')){
+  if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  else if (topic.includes('/luz')) {
     const num = topic.match(/luz(\d+)/)[1];
-    duracion_rele = parseInt(localStorage.getItem('tiempo_'+num))||36000;
+    duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
   }
+
+
+  // Crear mensaje
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio,
     accion,
-    clave:k,
-    ct:ct,
-    apartamento:a,
-    fechaAlta:fa,
-    fechaEntrada:fe,
-    horaEntrada:he,
-    fechaFin:fs,
-    horaFin:hs,
-    cp_portal:+cp,
-    ca_apto:+ca,
-    l_luz:l,
-    duracion_rele
+    clave: k,
+    ct: ct, 
+    apartamento: a,
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs,
+    cp_portal: +cp,
+    ca_apto: +ca,
+    l_luz: l,
+    duracion_rele,
+    ia: ia,
+    m1: m1,
+    m2: m2, 
+    m3: m3
   };
-  console.log(`➡️ MQTT: ${topic}`,mensaje);
-  client.publish(topic, JSON.stringify(mensaje), {qos:1}, err=>{if(err)console.log("❌ Error al publicar:",err)});
+
+  console.log(`➡️ MQTT: ${topic}`, mensaje);
+  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
+    if (err) console.log("❌ Error al publicar:", err);
+  });
 }
 
-// ================= ELEMENTOS =================
+
+
+
+
+
+// -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
 const btnAbrirApto = document.getElementById('abrirApto');
 const estadoPortal = document.getElementById('estadoPortal');
@@ -227,10 +269,6 @@ const estadoApto = document.getElementById('estadoApto');
 const estadoApartamento = document.getElementById('estadoApartamento');
 const panelLuces = document.getElementById('panelLuces');
 const botonesLuces = document.getElementById('botonesLuces');
-const tituloPrincipal = document.getElementById('tituloPrincipal');
-const popupConfig = document.getElementById('popupConfig');
-const configBotones = document.getElementById('configBotones');
-const cerrarPopup = document.getElementById('cerrarPopup');
 let botonesLuz = [];
 
 function formatearFechaHora(f,h){
@@ -245,7 +283,7 @@ document.getElementById('horaInicio').textContent = inicio.hora;
 document.getElementById('fechaFin').textContent = fin.fecha;
 document.getElementById('horaFin').textContent = fin.hora;
 
-// ================= BOTONES LUCES =================
+// -------- BOTONES LUCES --------
 if(l>0){
   panelLuces.style.display='block';
   for(let i=1;i<=l;i++){
@@ -260,17 +298,18 @@ if(l>0){
       if(btn.classList.contains('verde')){
         btn.classList.replace('verde','amarillo');
         btn.textContent=`Apagar\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`,'ON');
+        enviarMQTT(`/luz${i}`, 'ON');   // encender luz i
       }else{
         btn.classList.replace('amarillo','verde');
         btn.textContent=`Encender\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`,'OFF');
+        enviarMQTT(`/luz${i}`, 'OFF');   // encender luz i
       }
     });
   }
 }
 
-// ================= INICIALIZAR ESTADO =================
+
+// -------- INICIALIZAR ESTADO LUCES --------
 client.on('connect', ()=>{
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
@@ -280,8 +319,8 @@ client.on('connect', ()=>{
 
   // Luces
   botonesLuz.forEach((btn,i)=>{
-    const subTopic = `/luz${i+1}`;
-    const topic = `${ct}${subTopic}`;
+    const subTopic = `/luz${i+1}`;          // subtopic sin CT
+    const topic = `${ct}${subTopic}`;       // topic completo con CT
     client.subscribe(topic,{qos:1});
     client.once('message',(t,msg)=>{
       if(t!==topic) return;
@@ -289,24 +328,31 @@ client.on('connect', ()=>{
       if(estado==='on'){
         btn.classList.replace('verde','amarillo');
         btn.textContent=`Apagar\nLuz ${i+1}`;
-      }else{
+      } else {
         btn.classList.replace('amarillo','verde');
         btn.textContent=`Encender\nLuz ${i+1}`;
       }
     });
-    enviarMQTT(subTopic,'get');
+    enviarMQTT(subTopic,'get');              // enviarMQTT se encargará de anteponer CT
   });
 
   // Portal
-  client.subscribe(`${ct}/portal`,{qos:1});
+  const portalTopic = `${ct}/portal`;
+  client.subscribe(portalTopic,{qos:1});
   enviarMQTT('/portal','get');
 
   // Apto
-  client.subscribe(`${ct}/apto`,{qos:1});
+  const aptoTopic = `${ct}/apto`;
+  client.subscribe(aptoTopic,{qos:1});
   enviarMQTT('/apto','get');
 });
 
-// ================= VALIDAR ACCESO =================
+
+
+
+
+
+// -------- VALIDACIÓN ACCESO --------
 function validarAcceso(){
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
@@ -336,13 +382,15 @@ function validarAcceso(){
 validarAcceso();
 setInterval(validarAcceso,60000);
 
-// ================= EVENTOS BOTONES =================
+// -------- EVENTOS PORTAL/APTO --------
 btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
   const tiempo = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
   btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent="Empuje la Puerta";
-  enviarMQTT('/portal','ON');
+  enviarMQTT('/portal', 'ON');    // abrir portal
+
+// Apartamento
   setTimeout(()=>{ if(!btnAbrir.disabled){ btnAbrir.classList.replace('amarillo','verde'); btnAbrir.textContent="Abrir Puerta Portal"; } }, tiempo*1000);
 });
 
@@ -351,12 +399,17 @@ btnAbrirApto.addEventListener('click', ()=>{
   const tiempo = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
   btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent="Empuje la Puerta";
-  enviarMQTT('/apto','ON');
+  enviarMQTT('/apto', 'ON');      // abrir apartamento
   setTimeout(()=>{ if(!btnAbrirApto.disabled){ btnAbrirApto.classList.replace('amarillo','verde'); btnAbrirApto.textContent="Abrir Puerta Apartamento"; } }, tiempo*1000);
 });
 
-// ================= POP-UP CONFIG =================
+// -------- POP-UP CONFIGURACIÓN --------
+const tituloPrincipal = document.getElementById('tituloPrincipal');
+const popupConfig = document.getElementById('popupConfig');
+const configBotones = document.getElementById('configBotones');
+const cerrarPopup = document.getElementById('cerrarPopup');
 let pulsacionTimer;
+
 function iniciarPulsacion(){ pulsacionTimer=setTimeout(mostrarPopupConfig,5000); }
 function cancelarPulsacion(){ clearTimeout(pulsacionTimer); }
 
@@ -405,8 +458,6 @@ function mostrarPopupConfig(){
 }
 
 cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
-
-}); // FIN DOMContentLoaded
 </script>
 </body>
-</html>
+</html>!D
