@@ -471,7 +471,11 @@ function mostrarPopupConfig(){
   });
 }
 
-cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+  // Proteger cierre del popup
+  if(cerrarPopup && popupConfig) {
+    cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+  }
+
 </script>
 </body>
 </html>!D
