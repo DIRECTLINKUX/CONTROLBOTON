@@ -31,14 +31,26 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
   gap:1rem;
 }
 
-.fecha-hora-combinada #inicioLinea {
-  display:flex;
-  gap:0.5rem;
-  font-size:2.5rem;
-  align-items:center;
+.fecha-hora-combinada {
+  display: flex;
+  flex-direction: column; /* columnas en móvil */
+  font-size: 2rem;        /* más compacto en pantalla pequeña */
+  gap: 0.5rem;
 }
 
+.inicioLinea, .finLinea {
+  display: flex;
+  flex-wrap: wrap;       /* si la pantalla es muy pequeña se puede ajustar */
+  gap: 0.5rem;
+  align-items: center;
+}
 
+@media (min-width: 480px) {
+  .fecha-hora-combinada {
+    flex-direction: row; /* en pantallas más grandes, inicio y fin en fila */
+    justify-content: center;
+  }
+}
 
 .panel{
   border-radius:15px;
@@ -101,18 +113,18 @@ Apartamento: <span id="apartamento"></span>
 <span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
-
-<div class="fecha-hora fecha-hora-combinada">
-  <div id="inicioLinea">
+<div class="fecha-hora-combinada">
+  <div class="inicioLinea">
     <span>Inicio:</span>
     <span id="fechaInicio"></span>
     <span id="horaInicio"></span>
   </div>
-  <span>Fin:</span>
-  <span id="fechaFin"></span>
-  <span id="horaFin"></span>
+  <div class="finLinea">
+    <span>Fin:</span>
+    <span id="fechaFin"></span>
+    <span id="horaFin"></span>
+  </div>
 </div>
-
 
 
 
