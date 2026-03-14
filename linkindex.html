@@ -137,165 +137,276 @@ Apartamento: <span id="apartamento"></span>
 
 <script>
 document.addEventListener('DOMContentLoaded', ()=>{
-  // -------- DECODIFICAR PARÁMETRO d --------
-  function base64urlDecode(str){
-    str = str.replace(/-/g,'+').replace(/_/g,'/');
-    while(str.length % 4) str += '=';
-    return atob(str);
+
+// ================= DECODIFICAR PARÁMETRO d =================
+function base64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length % 4) str += '=';
+  return atob(str);
+}
+
+const params = new URLSearchParams(window.location.search);
+let d = params.get('d') || '';
+let decoded = {};
+
+try{
+  const d_url = decodeURIComponent(d);
+  const base = base64urlDecode(d_url);
+  const paramStr = decodeURIComponent(base);
+  paramStr.split('&').forEach(p=>{
+    const [key,val] = p.split('=');
+    decoded[key] = val || '';
+  });
+  console.log("PARAMS DECODIFICADOS:",decoded);
+}catch(e){console.error("❌ Error decodificando link:",e);}
+
+// ================= EXTRAER PARÁMETROS =================
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+let m3 = decoded['m3'] || '';
+if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+console.log("MQTT URL:", m3,"USER:",m1,"PASS:",m2);
+
+// ================= CONEXIÓN MQTT =================
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout:3000});
+client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
+client.on('error', err=>console.log("❌ Error MQTT:",err));
+
+function enviarMQTT(topic, accion){
+  if (!ct || ct.trim()===''){ console.error("❌ ERROR: CT no definido"); return; }
+  const ahora = new Date();
+  const fechaHoraEnvio = ahora.toISOString();
+  if(!topic.startsWith(ct)){
+    const sep = (ct.endsWith('/') || topic.startsWith('/'))?'':'/';
+    topic = ct+sep+topic;
   }
+  let duracion_rele = 0;
+  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir'))||3;
+  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto'))||3;
+  else if(topic.includes('/luz')){
+    const num = topic.match(/luz(\d+)/)[1];
+    duracion_rele = parseInt(localStorage.getItem('tiempo_'+num))||36000;
+  }
+  const mensaje = {
+    id: ahora.getTime(),
+    fechaHoraEnvio,
+    accion,
+    clave:k,
+    ct:ct,
+    apartamento:a,
+    fechaAlta:fa,
+    fechaEntrada:fe,
+    horaEntrada:he,
+    fechaFin:fs,
+    horaFin:hs,
+    cp_portal:+cp,
+    ca_apto:+ca,
+    l_luz:l,
+    duracion_rele
+  };
+  console.log(`➡️ MQTT: ${topic}`,mensaje);
+  client.publish(topic, JSON.stringify(mensaje), {qos:1}, err=>{if(err)console.log("❌ Error al publicar:",err)});
+}
 
-  const params = new URLSearchParams(window.location.search);
-  let d = params.get('d') || '';
-  let decoded = {};
+// ================= ELEMENTOS =================
+const btnAbrir = document.getElementById('abrir');
+const btnAbrirApto = document.getElementById('abrirApto');
+const estadoPortal = document.getElementById('estadoPortal');
+const estadoApto = document.getElementById('estadoApto');
+const estadoApartamento = document.getElementById('estadoApartamento');
+const panelLuces = document.getElementById('panelLuces');
+const botonesLuces = document.getElementById('botonesLuces');
+const tituloPrincipal = document.getElementById('tituloPrincipal');
+const popupConfig = document.getElementById('popupConfig');
+const configBotones = document.getElementById('configBotones');
+const cerrarPopup = document.getElementById('cerrarPopup');
+let botonesLuz = [];
 
-  try{
-    const d_url = decodeURIComponent(d);
-    const base = base64urlDecode(d_url);
-    const paramStr = decodeURIComponent(base);
+function formatearFechaHora(f,h){
+  return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
+}
 
-    paramStr.split('&').forEach(p=>{
-      const [key,val] = p.split('=');
-      decoded[key] = val || '';
+const inicio = formatearFechaHora(fe,he);
+const fin = formatearFechaHora(fs,hs);
+document.getElementById('apartamento').textContent = a;
+document.getElementById('fechaInicio').textContent = inicio.fecha;
+document.getElementById('horaInicio').textContent = inicio.hora;
+document.getElementById('fechaFin').textContent = fin.fecha;
+document.getElementById('horaFin').textContent = fin.hora;
+
+// ================= BOTONES LUCES =================
+if(l>0){
+  panelLuces.style.display='block';
+  for(let i=1;i<=l;i++){
+    const btn = document.createElement('button');
+    btn.dataset.index=i;
+    btn.classList.add('verde');
+    btn.textContent=`Encender\nLuz ${i}`;
+    botonesLuces.appendChild(btn);
+    botonesLuz.push(btn);
+    btn.addEventListener('click', ()=>{
+      if(btn.disabled) return;
+      if(btn.classList.contains('verde')){
+        btn.classList.replace('verde','amarillo');
+        btn.textContent=`Apagar\nLuz ${i}`;
+        enviarMQTT(`/luz${i}`,'ON');
+      }else{
+        btn.classList.replace('amarillo','verde');
+        btn.textContent=`Encender\nLuz ${i}`;
+        enviarMQTT(`/luz${i}`,'OFF');
+      }
+    });
+  }
+}
+
+// ================= INICIALIZAR ESTADO =================
+client.on('connect', ()=>{
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora>=fIni && ahora<=fFin;
+  if(!acceso) return;
+
+  // Luces
+  botonesLuz.forEach((btn,i)=>{
+    const subTopic = `/luz${i+1}`;
+    const topic = `${ct}${subTopic}`;
+    client.subscribe(topic,{qos:1});
+    client.once('message',(t,msg)=>{
+      if(t!==topic) return;
+      const estado = msg.toString();
+      if(estado==='on'){
+        btn.classList.replace('verde','amarillo');
+        btn.textContent=`Apagar\nLuz ${i+1}`;
+      }else{
+        btn.classList.replace('amarillo','verde');
+        btn.textContent=`Encender\nLuz ${i+1}`;
+      }
+    });
+    enviarMQTT(subTopic,'get');
+  });
+
+  // Portal
+  client.subscribe(`${ct}/portal`,{qos:1});
+  enviarMQTT('/portal','get');
+
+  // Apto
+  client.subscribe(`${ct}/apto`,{qos:1});
+  enviarMQTT('/apto','get');
+});
+
+// ================= VALIDAR ACCESO =================
+function validarAcceso(){
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora>=fIni && ahora<=fFin;
+
+  const aptoActivo = acceso && ca;
+  const portalActivo = acceso && cp;
+
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris', !portalActivo);
+  btnAbrirApto.disabled = !aptoActivo;
+  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+
+  estadoPortal.textContent = portalActivo?'ACTIVO':'INACTIVO';
+  estadoPortal.style.color = portalActivo?'#0b7a2a':'#b30000';
+  estadoApto.textContent = aptoActivo?'ACTIVO':'INACTIVO';
+  estadoApto.style.color = aptoActivo?'#0b7a2a':'#b30000';
+  estadoApartamento.textContent = acceso?'Activo':'Fuera de horario';
+  estadoApartamento.style.color = acceso?'#0b7a2a':'#b30000';
+
+  botonesLuz.forEach((b,i)=>{
+    b.disabled = !aptoActivo;
+    if(!aptoActivo){ b.classList.remove('verde','amarillo'); b.classList.add('gris'); b.textContent=`Encender\nLuz ${i+1}`; }
+  });
+}
+validarAcceso();
+setInterval(validarAcceso,60000);
+
+// ================= EVENTOS BOTONES =================
+btnAbrir.addEventListener('click', ()=>{
+  if(btnAbrir.disabled) return;
+  const tiempo = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  btnAbrir.classList.replace('verde','amarillo');
+  btnAbrir.textContent="Empuje la Puerta";
+  enviarMQTT('/portal','ON');
+  setTimeout(()=>{ if(!btnAbrir.disabled){ btnAbrir.classList.replace('amarillo','verde'); btnAbrir.textContent="Abrir Puerta Portal"; } }, tiempo*1000);
+});
+
+btnAbrirApto.addEventListener('click', ()=>{
+  if(btnAbrirApto.disabled) return;
+  const tiempo = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  btnAbrirApto.classList.replace('verde','amarillo');
+  btnAbrirApto.textContent="Empuje la Puerta";
+  enviarMQTT('/apto','ON');
+  setTimeout(()=>{ if(!btnAbrirApto.disabled){ btnAbrirApto.classList.replace('amarillo','verde'); btnAbrirApto.textContent="Abrir Puerta Apartamento"; } }, tiempo*1000);
+});
+
+// ================= POP-UP CONFIG =================
+let pulsacionTimer;
+function iniciarPulsacion(){ pulsacionTimer=setTimeout(mostrarPopupConfig,5000); }
+function cancelarPulsacion(){ clearTimeout(pulsacionTimer); }
+
+['mousedown','touchstart'].forEach(e=>tituloPrincipal.addEventListener(e,iniciarPulsacion));
+['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>tituloPrincipal.addEventListener(e,cancelarPulsacion));
+
+function mostrarPopupConfig(){
+  popupConfig.style.display='block';
+  configBotones.innerHTML='';
+  const todosBotones = [
+    {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
+    {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
+    ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
+  ];
+  const valoresPortalApto = [1,2,3,4];
+  const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+
+  todosBotones.forEach(boton=>{
+    const div = document.createElement('div');
+    div.style.display='flex';
+    div.style.alignItems='center';
+    const label = document.createElement('span');
+    label.textContent = boton.nombre;
+    label.style.width='200px';
+    const select = document.createElement('select');
+    select.dataset.botonId = boton.id;
+    const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
+
+    opciones.forEach(v=>{
+      const opt = document.createElement('option');
+      opt.value = (v==='Continuo') ? 999999 : v;
+      if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent = v+' segundos';
+      else if(v==='Continuo') opt.textContent='Continuo';
+      else if(v<60) opt.textContent=v+' minutos';
+      else opt.textContent = `${v/60} Horas`;
+      select.appendChild(opt);
     });
 
-    console.log("PARAMS DECODIFICADOS:",decoded);
+    const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
+    if(valorGuardado) select.value = valorGuardado;
+    select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
+    div.appendChild(label);
+    div.appendChild(select);
+    configBotones.appendChild(div);
+  });
+}
 
-  }catch(e){
-    console.error("❌ Error decodificando link:",e);
-  }
+cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
 
-  // -------- EXTRAER PARÁMETROS --------
-  const k   = decoded['k'];
-  const a   = decoded['a'];
-  const ct  = decoded['ct'];
-  const fa  = decoded['fa'];
-  const fe  = decoded['fe'];
-  const he  = decoded['he'];
-  const fs  = decoded['fs'];
-  const hs  = decoded['hs'];
-  const cp  = decoded['cp']==='1';
-  const ca  = decoded['ca']==='1';
-  const l   = parseInt(decoded['l'])||0;
-
-  const m1  = decoded['m1'];
-  const m2  = decoded['m2'];
-  let m3 = decoded['m3'] || '';
-  if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-
-  console.log("MQTT URL:", m3);
-  console.log("MQTT USER:", m1);
-  console.log("MQTT PASS:", m2);
-
-  // -------- CONEXIÓN MQTT --------
-  const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
-  client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-  client.on('error', err=>console.log("❌ Error MQTT:",err));
-
-  function enviarMQTT(topic, accion) { 
-    if (!ct || ct.trim() === '') {
-      console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-      return;
-    }
-    const ahora = new Date();
-    const fechaHoraEnvio = ahora.toISOString();
-    if (!topic.startsWith(ct)) {
-      const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
-      topic = `${ct}${separador}${topic}`;
-    }
-
-    let duracion_rele = 0;
-    if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-    else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-    else if (topic.includes('/luz')) {
-      const num = topic.match(/luz(\d+)/)[1];
-      duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
-    }
-
-    const mensaje = {
-      id: ahora.getTime(),
-      fechaHoraEnvio,
-      accion,
-      clave: k,
-      ct: ct, 
-      apartamento: a,
-      fechaAlta: fa,
-      fechaEntrada: fe,
-      horaEntrada: he,
-      fechaFin: fs,
-      horaFin: hs,
-      cp_portal: +cp,
-      ca_apto: +ca,
-      l_luz: l,
-      duracion_rele
-    };
-
-    console.log(`➡️ MQTT: ${topic}`, mensaje);
-    client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
-      if (err) console.log("❌ Error al publicar:", err);
-    });
-  }
-
-  // -------- ELEMENTOS --------
-  const btnAbrir = document.getElementById('abrir');
-  const btnAbrirApto = document.getElementById('abrirApto');
-  const estadoPortal = document.getElementById('estadoPortal');
-  const estadoApto = document.getElementById('estadoApto');
-  const estadoApartamento = document.getElementById('estadoApartamento');
-  const panelLuces = document.getElementById('panelLuces');
-  const botonesLuces = document.getElementById('botonesLuces');
-  const tituloPrincipal = document.getElementById('tituloPrincipal');
-  const popupConfig = document.getElementById('popupConfig');
-  const configBotones = document.getElementById('configBotones');
-  const cerrarPopup = document.getElementById('cerrarPopup');
-  let botonesLuz = [];
-
-  if(!btnAbrir || !btnAbrirApto || !tituloPrincipal || !popupConfig || !cerrarPopup){
-    console.error("⚠️ Algunos elementos no se encontraron en el DOM");
-    return;
-  }
-
-  function formatearFechaHora(f,h){
-    return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
-  }
-
-  const inicio = formatearFechaHora(fe,he);
-  const fin = formatearFechaHora(fs,hs);
-  document.getElementById('apartamento').textContent = a;
-  document.getElementById('fechaInicio').textContent = inicio.fecha;
-  document.getElementById('horaInicio').textContent = inicio.hora;
-  document.getElementById('fechaFin').textContent = fin.fecha;
-  document.getElementById('horaFin').textContent = fin.hora;
-
-  // -------- BOTONES LUCES --------
-  if(l>0){
-    panelLuces.style.display='block';
-    for(let i=1;i<=l;i++){
-      const btn = document.createElement('button');
-      btn.dataset.index=i;
-      btn.classList.add('verde');
-      btn.textContent=`Encender\nLuz ${i}`;
-      botonesLuces.appendChild(btn);
-      botonesLuz.push(btn);
-      btn.addEventListener('click', ()=>{
-        if(btn.disabled) return;
-        if(btn.classList.contains('verde')){
-          btn.classList.replace('verde','amarillo');
-          btn.textContent=`Apagar\nLuz ${i}`;
-          enviarMQTT(`/luz${i}`, 'ON');
-        }else{
-          btn.classList.replace('amarillo','verde');
-          btn.textContent=`Encender\nLuz ${i}`;
-          enviarMQTT(`/luz${i}`, 'OFF');
-        }
-      });
-    }
-  }
-
-  // -------- RESTO DEL CÓDIGO (INICIALIZAR, VALIDAR, EVENTOS) --------
-  // Tu código restante se mantiene igual, ya dentro de DOMContentLoaded para evitar null errors
-  // Ejemplo: validarAcceso(), eventos btnAbrir/btnAbrirApto, popupConfig, etc.
-
-}); // Fin DOMContentLoaded
+}); // FIN DOMContentLoaded
 </script>
 </body>
 </html>
