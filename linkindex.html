@@ -408,17 +408,27 @@ btnAbrirApto.addEventListener('click', ()=>{
 });
 
 // -------- POP-UP CONFIGURACIÓN --------
-const tituloPrincipal = document.getElementById('tituloPrincipal');
-const popupConfig = document.getElementById('popupConfig');
-const configBotones = document.getElementById('configBotones');
-const cerrarPopup = document.getElementById('cerrarPopup');
-let pulsacionTimer;
+document.addEventListener('DOMContentLoaded', () => {
+  const tituloPrincipal = document.getElementById('tituloPrincipal');
+  const popupConfig = document.getElementById('popupConfig');
+  const configBotones = document.getElementById('configBotones');
+  const cerrarPopup = document.getElementById('cerrarPopup');
+  let pulsacionTimer;
 
-function iniciarPulsacion(){ pulsacionTimer=setTimeout(mostrarPopupConfig,5000); }
-function cancelarPulsacion(){ clearTimeout(pulsacionTimer); }
+  function iniciarPulsacion() { 
+    pulsacionTimer = setTimeout(mostrarPopupConfig, 5000); 
+  }
 
-['mousedown','touchstart'].forEach(e=>tituloPrincipal.addEventListener(e,iniciarPulsacion));
-['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>tituloPrincipal.addEventListener(e,cancelarPulsacion));
+  function cancelarPulsacion() { 
+    clearTimeout(pulsacionTimer); 
+  }
+
+  if (tituloPrincipal) {
+    ['mousedown','touchstart'].forEach(e => tituloPrincipal.addEventListener(e, iniciarPulsacion));
+    ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
+  }
+});
+
 
 function mostrarPopupConfig(){
   popupConfig.style.display='block';
