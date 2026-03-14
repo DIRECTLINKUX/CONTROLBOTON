@@ -223,13 +223,7 @@ function enviarMQTT(topic, accion) {
     topic = `${ct}${separador}${topic}`;
   }
 
-  // Decodificar k justo antes de enviarlo
-    let kNormal = k;
-    try {
-      kNormal = base64urlDecode(k);  // aquí conviertes Base64 -> normal
-    } catch(e){
-      console.error("❌ Error decodificando k:", e);
-    }
+}
 
 
   // Determinar duración según tipo de dispositivo
