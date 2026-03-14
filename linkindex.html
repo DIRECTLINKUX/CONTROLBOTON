@@ -428,56 +428,55 @@ document.addEventListener('DOMContentLoaded', () => {
     ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
   }
 
-  // Proteger cierre del popup
+  // Cerrar popup
   if(cerrarPopup && popupConfig) {
     cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
   }
 
-});
+  // -------- función mostrarPopupConfig dentro de DOMContentLoaded --------
+  function mostrarPopupConfig(){
+    if(!popupConfig || !configBotones) return; // proteger si no existen
+    popupConfig.style.display='block';
+    configBotones.innerHTML='';
+    const todosBotones = [
+      {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
+      {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
+      ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
+    ];
+    const valoresPortalApto = [1,2,3,4];
+    const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
 
+    todosBotones.forEach(boton=>{
+      const div = document.createElement('div');
+      div.style.display='flex';
+      div.style.alignItems='center';
+      const label = document.createElement('span');
+      label.textContent = boton.nombre;
+      label.style.width='200px';
+      const select = document.createElement('select');
+      select.dataset.botonId = boton.id;
+      const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
 
-function mostrarPopupConfig(){
-  popupConfig.style.display='block';
-  configBotones.innerHTML='';
-  const todosBotones = [
-    {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
-    {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
-    ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
-  ];
-  const valoresPortalApto = [1,2,3,4];
-  const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+      opciones.forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = (v==='Continuo') ? 999999 : v;
+        if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent = v+' segundos';
+        else if(v==='Continuo') opt.textContent='Continuo';
+        else if(v<60) opt.textContent=v+' minutos';
+        else opt.textContent = `${v/60} Horas`;
+        select.appendChild(opt);
+      });
 
-  todosBotones.forEach(boton=>{
-    const div = document.createElement('div');
-    div.style.display='flex';
-    div.style.alignItems='center';
-    const label = document.createElement('span');
-    label.textContent = boton.nombre;
-    label.style.width='200px';
-    const select = document.createElement('select');
-    select.dataset.botonId = boton.id;
-    const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
-
-    opciones.forEach(v=>{
-      const opt = document.createElement('option');
-      opt.value = (v==='Continuo') ? 999999 : v;
-      if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent = v+' segundos';
-      else if(v==='Continuo') opt.textContent='Continuo';
-      else if(v<60) opt.textContent=v+' minutos';
-      else opt.textContent = `${v/60} Horas`;
-      select.appendChild(opt);
+      const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
+      if(valorGuardado) select.value = valorGuardado;
+      select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
+      div.appendChild(label);
+      div.appendChild(select);
+      configBotones.appendChild(div);
     });
+  }
 
-    const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
-    if(valorGuardado) select.value = valorGuardado;
-    select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
-    div.appendChild(label);
-    div.appendChild(select);
-    configBotones.appendChild(div);
-  });
-}
-cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
- 
-</script>
-</body>
-</html>!D
+  // Exponer la función para el setTimeout
+  window.mostrarPopupConfig = mostrarPopupConfig;
+
+});
