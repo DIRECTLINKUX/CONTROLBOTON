@@ -1,4 +1,4 @@
-<OCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -157,43 +157,28 @@ button{
 
 <script>
 
-// -------- PARÁMETROS URL BASE64 --------
+// -------- FUNCIONES BASE64 --------
 function base64urlDecode(str){
   str = str.replace(/-/g,'+').replace(/_/g,'/');
   while(str.length % 4) str += '=';
-  return decodeURIComponent(atob(str));  // decodeURIComponent se encarga de los %
+  return decodeURIComponent(atob(str));
 }
 
-// Extraemos los parámetros de la URL
+// -------- EXTRAER PARÁMETROS URL --------
 const params = new URLSearchParams(window.location.search);
-let d = params.get('d') || '';
-
-// Mostrar valor del parámetro d (Base64URL)
-alert("Valor de 'd' en URL: " + d);
-console.log("Valor de 'd' en URL:", d);
-
+const d = params.get('d') || '';
 let decoded = {};
 try {
-  const paramStr = base64urlDecode(d); // decodificar Base64URL
-  alert("String decodificado: " + paramStr);
-  console.log("String decodificado:", paramStr);
-
-  const pares = paramStr.split('&');
-  pares.forEach(p => {
+  const paramStr = base64urlDecode(d);
+  paramStr.split('&').forEach(p => {
     const [key,val] = p.split('=');
     decoded[key] = val || '';
   });
-
-  // Mostrar objeto decodificado
-  alert("Parámetros decodificados: " + JSON.stringify(decoded, null, 2));
-  console.log("Parámetros decodificados:", decoded);
-
 } catch(e){
-  console.error("❌ Error decodificando link:", e);
-  alert("❌ Error decodificando link: " + e);
+  console.error("Error decodificando link:", e);
 }
 
-// Extraer los parámetros ya "normales"
+// -------- PARÁMETROS --------
 const k   = decoded['k'];
 const ia  = decoded['ia'];
 const a   = decoded['a'];
@@ -208,90 +193,38 @@ const ca  = decoded['ca'] === '1';
 const l   = parseInt(decoded['l']) || 0;
 const m1  = decoded['m1'] || '';
 const m2  = decoded['m2'] || '';
+let m3   = decoded['m3'] ? `wss://${decoded['m3']}.s1.eu.hivemq.cloud:8884/mqtt` : '';
 
-console.log({k, ia, a, ct, fa, fe, he, fs, hs, cp, ca, l, m1, m2});
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-let m3 = '';
-if(decoded['m3']){
-  m3 = "wss://" + decoded['m3'] + ".s1.eu.hivemq.cloud:8884/mqtt";
-}
-
-// -------- MQTT br us pa--------
-
-const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
+// -------- MQTT --------
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout:3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
 
-
-
-function enviarMQTT(topic, accion) { 
-  if (!ct || ct.trim() === '') {
-    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-    return; // salir sin enviar nada
-  }
-
+function enviarMQTT(topic, accion){
+  if(!ct) return;
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString();
-
-  // Anteponer CT al topic si no lo tiene
-  if (!topic.startsWith(ct)) {
-    // Asegurarse de que haya exactamente un '/' entre CT y topic
-    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
-    topic = `${ct}${separador}${topic}`;
-  }
-
-   // Determinar duración según tipo de dispositivo
+  if(!topic.startsWith(ct)) topic = `${ct}${ct.endsWith('/')||topic.startsWith('/')?'':'/'}${topic}`;
+  
   let duracion_rele = 0;
-  if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-  else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-  else if (topic.includes('/luz')) {
-    const num = topic.match(/luz(\d+)/)[1];
-    duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
-  }
+  if(topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  else if(topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  else if(topic.includes('/luz')) duracion_rele = parseInt(localStorage.getItem('tiempo_' + topic.match(/luz(\d+)/)[1])) || 36000;
 
-  // Crear mensaje
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio,
     accion,
     clave: k,
-    ct: ct, 
-    apartamento: a,
-    fechaAlta: fa,
-    fechaEntrada: fe,
-    horaEntrada: he,
-    fechaFin: fs,
-    horaFin: hs,
-    cp_portal: +cp,
-    ca_apto: +ca,
-    l_luz: l,
-    duracion_rele
+    ct, apartamento: a,
+    fechaAlta: fa, fechaEntrada: fe, horaEntrada: he,
+    fechaFin: fs, horaFin: hs,
+    cp_portal: +cp, ca_apto: +ca,
+    l_luz: l, duracion_rele
   };
 
-  console.log(`➡️ MQTT: ${topic}`, mensaje);
-  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
-    if (err) console.log("❌ Error al publicar:", err);
-  });
+  client.publish(topic, JSON.stringify(mensaje), {qos:1}, err=>err && console.log("❌ Error al publicar:",err));
 }
-
-
-
-
-
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -304,7 +237,10 @@ const botonesLuces = document.getElementById('botonesLuces');
 let botonesLuz = [];
 
 function formatearFechaHora(f,h){
-  return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
+  return {
+    fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-',
+    hora: h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'
+  };
 }
 
 const inicio = formatearFechaHora(fe,he);
@@ -325,72 +261,26 @@ if(l>0){
     btn.textContent=`Encender\nLuz ${i}`;
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
+
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
       if(btn.classList.contains('verde')){
         btn.classList.replace('verde','amarillo');
         btn.textContent=`Apagar\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'ON');   // encender luz i
+        enviarMQTT(`/luz${i}`,'ON');
       }else{
         btn.classList.replace('amarillo','verde');
         btn.textContent=`Encender\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'OFF');   // encender luz i
+        enviarMQTT(`/luz${i}`,'OFF');
       }
     });
   }
 }
 
-
-// -------- INICIALIZAR ESTADO LUCES --------
-client.on('connect', ()=>{
-  const ahora = new Date();
-  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = ahora>=fIni && ahora<=fFin;
-  if(!acceso) return;
-
-  // Luces
-  botonesLuz.forEach((btn,i)=>{
-    const subTopic = `/luz${i+1}`;          // subtopic sin CT
-    const topic = `${ct}${subTopic}`;       // topic completo con CT
-    client.subscribe(topic,{qos:1});
-    client.once('message',(t,msg)=>{
-      if(t!==topic) return;
-      const estado = msg.toString();
-      if(estado==='on'){
-        btn.classList.replace('verde','amarillo');
-        btn.textContent=`Apagar\nLuz ${i+1}`;
-      } else {
-        btn.classList.replace('amarillo','verde');
-        btn.textContent=`Encender\nLuz ${i+1}`;
-      }
-    });
-    enviarMQTT(subTopic,'get');              // enviarMQTT se encargará de anteponer CT
-  });
-
-  // Portal
-  const portalTopic = `${ct}/portal`;
-  client.subscribe(portalTopic,{qos:1});
-  enviarMQTT('/portal','get');
-
-  // Apto
-  const aptoTopic = `${ct}/apto`;
-  client.subscribe(aptoTopic,{qos:1});
-  enviarMQTT('/apto','get');
-});
-
-
-
-
-
-
 // -------- VALIDACIÓN ACCESO --------
 function validarAcceso(){
   const ahora = new Date();
-  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = ahora>=fIni && ahora<=fFin;
-
+  const acceso = ahora >= new Date(`${inicio.fecha}T${inicio.hora}:00`) && ahora <= new Date(`${fin.fecha}T${fin.hora}:00`);
   const aptoActivo = acceso && ca;
   const portalActivo = acceso && cp;
 
@@ -414,15 +304,13 @@ function validarAcceso(){
 validarAcceso();
 setInterval(validarAcceso,60000);
 
-// -------- EVENTOS PORTAL/APTO --------
+// -------- EVENTOS --------
 btnAbrir.addEventListener('click', ()=>{
   if(btnAbrir.disabled) return;
   const tiempo = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
   btnAbrir.classList.replace('verde','amarillo');
   btnAbrir.textContent="Empuje la Puerta";
-  enviarMQTT('/portal', 'ON');    // abrir portal
-
-// Apartamento
+  enviarMQTT('/portal','ON');
   setTimeout(()=>{ if(!btnAbrir.disabled){ btnAbrir.classList.replace('amarillo','verde'); btnAbrir.textContent="Abrir Puerta Portal"; } }, tiempo*1000);
 });
 
@@ -431,7 +319,7 @@ btnAbrirApto.addEventListener('click', ()=>{
   const tiempo = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
   btnAbrirApto.classList.replace('verde','amarillo');
   btnAbrirApto.textContent="Empuje la Puerta";
-  enviarMQTT('/apto', 'ON');      // abrir apartamento
+  enviarMQTT('/apto','ON');
   setTimeout(()=>{ if(!btnAbrirApto.disabled){ btnAbrirApto.classList.replace('amarillo','verde'); btnAbrirApto.textContent="Abrir Puerta Apartamento"; } }, tiempo*1000);
 });
 
@@ -469,7 +357,6 @@ function mostrarPopupConfig(){
     const select = document.createElement('select');
     select.dataset.botonId = boton.id;
     const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
-
     opciones.forEach(v=>{
       const opt = document.createElement('option');
       opt.value = (v==='Continuo') ? 999999 : v;
@@ -479,7 +366,6 @@ function mostrarPopupConfig(){
       else opt.textContent = `${v/60} Horas`;
       select.appendChild(opt);
     });
-
     const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
     if(valorGuardado) select.value = valorGuardado;
     select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
@@ -490,6 +376,7 @@ function mostrarPopupConfig(){
 }
 
 cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+
 </script>
 </body>
-</html>!D
+</html>
