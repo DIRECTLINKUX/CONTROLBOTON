@@ -113,20 +113,20 @@ Apartamento: <span id="apartamento"></span>
 <span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
-<div class="fecha-hora-combinada">
-  <div class="inicioLinea">
-    <span>Inicio:</span>
-    <span id="fechaInicio"></span>
-    <span id="horaInicio"></span>
-  </div>
-  <div class="finLinea">
-    <span>Fin:</span>
-    <span id="fechaFin"></span>
-    <span id="horaFin"></span>
-  </div>
-</div>
 
+.fecha-hora-combinada {
+  display: flex;
+  flex-direction: column; /* dos líneas, inicio y fin */
+  gap: 0.5rem;
+  font-size: 2rem;
+}
 
+.inicioLinea, .finLinea {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: nowrap; /* fecha y hora en la misma línea */
+}
 
 <div class="panel portal">
 <div class="titulo-panel">Puerta Portal</div>
