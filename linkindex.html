@@ -76,114 +76,93 @@ button{
   font-weight:bold;
   color:white;
   transition:0.3s;
-  white-space:pre-line; 
+  white-space:pre-line;
 }
 .verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
-
-#popupConfig {
-  display:none;
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:white;
-  padding:2rem;
-  border-radius:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.4);
-  z-index:9999; 
-  max-height:80%;
-  max-width:90%;
-  width:400px; 
-  overflow-y:auto;
-}
-#popupConfig select {
-  font-size: 1.5rem;
-  padding: 0.3rem;
-  margin-left: 1rem;
-}
-#popupConfig button {
-  cursor:pointer;
-}
 </style>
 </head>
+
 <body>
+
 <div class="cuadro">
-  <button id="tituloPrincipal" style="font-size:4.5rem; margin-bottom:1rem; width:100%; background:linear-gradient(to bottom,#1f7a3a,#0f4f23); color:white; border:none; border-radius:15px; padding:1rem; cursor:pointer;">
-    Apertura de Puertas
-  </button>
 
-  <div class="fecha-hora">
-    Apartamento: <span id="apartamento"></span>
-    <span id="estadoApartamento" style="font-weight:bold;"></span>
-  </div>
-  <div class="fecha-hora fecha-hora-combinada">
-    <span>Inicio:</span>
-    <span id="fechaInicio"></span>
-    <span id="horaInicio"></span>
-    <span>Fin:</span>
-    <span id="fechaFin"></span>
-    <span id="horaFin"></span>
-  </div>
+<button id="tituloPrincipal" style="font-size:4.5rem;width:100%;background:linear-gradient(to bottom,#1f7a3a,#0f4f23);color:white;border:none;border-radius:15px;padding:1rem;">
+Apertura de Puertas
+</button>
 
-  <div class="panel portal">
-    <div class="titulo-panel">Puerta Portal</div>
-    <div class="estadoPuerta" id="estadoPortal"></div>
-    <div class="botones">
-      <button id="abrir" class="verde">Abrir Puerta Portal</button>
-    </div>
-  </div>
-
-  <div class="panel apto">
-    <div class="titulo-panel">Puerta Apartamento</div>
-    <div class="estadoPuerta" id="estadoApto"></div>
-    <div class="botones">
-      <button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
-    </div>
-  </div>
-
-  <div class="panel luces" id="panelLuces" style="display:none;">
-    <div class="titulo-panel">Luces</div>
-    <div class="botones" id="botonesLuces"></div>
-  </div>
+<div class="fecha-hora">
+Apartamento: <span id="apartamento"></span>
+<span id="estadoApartamento" style="font-weight:bold;"></span>
 </div>
 
-<div id="popupConfig">
-  <h3>Configuración de Tiempos</h3>
-  <div id="configBotones" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;"></div>
-  <button id="cerrarPopup" style="margin-top:1rem; padding:0.5rem 1rem; font-size:1.5rem; background:#555; color:white; border-radius:8px;">Cerrar</button>
+<div class="fecha-hora fecha-hora-combinada">
+<span>Inicio:</span>
+<span id="fechaInicio"></span>
+<span id="horaInicio"></span>
+<span>Fin:</span>
+<span id="fechaFin"></span>
+<span id="horaFin"></span>
+</div>
+
+<div class="panel portal">
+<div class="titulo-panel">Puerta Portal</div>
+<div class="estadoPuerta" id="estadoPortal"></div>
+<div class="botones">
+<button id="abrir" class="verde">Abrir Puerta Portal</button>
+</div>
+</div>
+
+<div class="panel apto">
+<div class="titulo-panel">Puerta Apartamento</div>
+<div class="estadoPuerta" id="estadoApto"></div>
+<div class="botones">
+<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+</div>
+</div>
+
+<div class="panel luces" id="panelLuces" style="display:none;">
+<div class="titulo-panel">Luces</div>
+<div class="botones" id="botonesLuces"></div>
+</div>
+
 </div>
 
 <script>
-// -------- PARÁMETROS URL BASE64 --------
-function base64urlDecode(str) {
-  // Reemplaza Base64 URL-safe y decodifica
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) str += '=';
-  return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+
+// -------- DECODIFICAR PARÁMETRO d --------
+
+function base64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length % 4) str += '=';
+  return atob(str);
 }
 
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
 let decoded = {};
-try {
- 
- const paramStr = base64urlDecode(decodeURIComponent(d));
 
+try{
 
+  const d_url = decodeURIComponent(d);
+  const base = base64urlDecode(d_url);
+  const paramStr = decodeURIComponent(base);
 
-  const pares = paramStr.split('&');
-  pares.forEach(p => {
+  paramStr.split('&').forEach(p=>{
     const [key,val] = p.split('=');
     decoded[key] = val || '';
   });
-} catch(e){
-  console.error("❌ Error decodificando link:", e);
+
+  console.log("PARAMS DECODIFICADOS:",decoded);
+
+}catch(e){
+  console.error("❌ Error decodificando link:",e);
 }
 
 
-// Extraer los parámetros ya "normales"
+// -------- EXTRAER PARÁMETROS --------
+
 const k   = decoded['k'];
 const a   = decoded['a'];
 const ct  = decoded['ct'];
@@ -199,18 +178,21 @@ const l   = parseInt(decoded['l'])||0;
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
 
-let m3 = decoded['m3']; 
+let m3 = decoded['m3'] || '';
 
-// reconstruir URL MQTT
+
+// -------- RECONSTRUIR MQTT --------
+
+if(m3){
 m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-
+}
 
 console.log("MQTT URL:", m3);
 console.log("MQTT USER:", m1);
 console.log("MQTT PASS:", m2);
 
 
-
+// -------- CONEXIÓN MQTT --------
 // -------- MQTT br us pa--------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
