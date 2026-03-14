@@ -427,6 +427,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ['mousedown','touchstart'].forEach(e => tituloPrincipal.addEventListener(e, iniciarPulsacion));
     ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
   }
+
+  // Proteger cierre del popup
+  if(cerrarPopup && popupConfig) {
+    cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+  }
+
 });
 
 
@@ -470,12 +476,8 @@ function mostrarPopupConfig(){
     configBotones.appendChild(div);
   });
 }
-
-  // Proteger cierre del popup
-  if(cerrarPopup && popupConfig) {
-    cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
-  }
-
+cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+ 
 </script>
 </body>
 </html>!D
