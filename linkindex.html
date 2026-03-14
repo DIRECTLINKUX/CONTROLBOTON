@@ -194,13 +194,13 @@ const l   = parseInt(decoded['l'])||0;
 
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
-const m4  = decoded['m3'];
+
+let m3 = decoded['m3']; 
 
 // reconstruir URL MQTT
-   m3 = "wss://" + m4 +  ".s1.eu.hivemq.cloud:8884/mqtt";
- 
-// -------- MQTT br us pa--------
+m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
 
+// -------- MQTT br us pa--------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
