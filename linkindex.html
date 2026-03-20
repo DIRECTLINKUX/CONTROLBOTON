@@ -126,8 +126,6 @@ Apartamento: <span id="apartamento"></span>
   </div>
 </div>
 
-
-
 <div class="panel portal">
 <div class="titulo-panel">Puerta Portal</div>
 <div class="estadoPuerta" id="estadoPortal"></div>
@@ -151,10 +149,28 @@ Apartamento: <span id="apartamento"></span>
 
 </div>
 
+<!-- POPUP CONFIGURACIÓN -->
+<div id="popupConfig" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
+    <span id="cerrarPopup" style="position:absolute; top:1rem; right:1rem; cursor:pointer; font-size:2rem;">✖</span>
+    <h2 style="font-size:1.8rem;">Selección de Tiempo</h2>
+    <div id="configBotones" style="margin-top:1rem;"></div>
+  </div>
+</div>
+
+<!-- POPUP LOG PUERTA -->
+<div id="popupLog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+     background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
+    <span id="cerrarPopupLog" style="position:absolute; top:1rem; right:1rem; cursor:pointer; font-size:2rem;">✖</span>
+    <h2 style="font-size:1.8rem;" id="tituloLog">Log Puerta</h2>
+    <div id="contenidoLog" style="margin-top:1rem; font-size:1.4rem;">Cargando log...</div>
+  </div>
+</div>
+
 <script>
 
 // -------- DECODIFICAR PARÁMETRO d --------
-
 function base64urlDecode(str){
   str = str.replace(/-/g,'+').replace(/_/g,'/');
   while(str.length % 4) str += '=';
@@ -166,25 +182,19 @@ let d = params.get('d') || '';
 let decoded = {};
 
 try{
-
   const d_url = decodeURIComponent(d);
   const base = base64urlDecode(d_url);
   const paramStr = decodeURIComponent(base);
-
   paramStr.split('&').forEach(p=>{
     const [key,val] = p.split('=');
     decoded[key] = val || '';
   });
-
   console.log("PARAMS DECODIFICADOS:",decoded);
-
 }catch(e){
   console.error("❌ Error decodificando link:",e);
 }
 
-
 // -------- EXTRAER PARÁMETROS --------
-
 const k   = decoded['k'];
 const a   = decoded['a'];
 const ct  = decoded['ct'];
@@ -199,47 +209,29 @@ const l   = parseInt(decoded['l'])||0;
 const ia  = decoded['ia'] || 0;
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
-
 let m3    = decoded['m3'] || '';
 
-
 // -------- RECONSTRUIR MQTT --------
-
 if(m3){
-m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
 }
 
-console.log("MQTT URL:", m3);
-console.log("MQTT USER:", m1);
-console.log("MQTT PASS:", m2);
-
-
 // -------- CONEXIÓN MQTT --------
-// -------- MQTT br us pa--------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
 
-
-
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
     console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-    return; // salir sin enviar nada
+    return;
   }
-
   const ahora = new Date();
   const fechaHoraEnvio = ahora.toISOString();
-
-  // Anteponer CT al topic si no lo tiene
   if (!topic.startsWith(ct)) {
-    // Asegurarse de que haya exactamente un '/' entre CT y topic
     const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
     topic = `${ct}${separador}${topic}`;
   }
-
-
-  // Determinar duración según tipo de dispositivo
   let duracion_rele = 0;
   if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
   else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
@@ -247,9 +239,6 @@ function enviarMQTT(topic, accion) {
     const num = topic.match(/luz(\d+)/)[1];
     duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
   }
-
-
-  // Crear mensaje
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio,
@@ -267,21 +256,11 @@ function enviarMQTT(topic, accion) {
     l_luz: l,
     duracion_rele 
   };
-
-
-
-
-
   console.log(`➡️ MQTT: ${topic}`, mensaje);
   client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if (err) console.log("❌ Error al publicar:", err);
   });
 }
-
-
-
-
-
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -296,7 +275,6 @@ let botonesLuz = [];
 function formatearFechaHora(f,h){
   return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
 }
-
 const inicio = formatearFechaHora(fe,he);
 const fin = formatearFechaHora(fs,hs);
 document.getElementById('apartamento').textContent = a;
@@ -320,16 +298,15 @@ if(l>0){
       if(btn.classList.contains('verde')){
         btn.classList.replace('verde','amarillo');
         btn.textContent=`Apagar\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'ON');   // encender luz i
+        enviarMQTT(`/luz${i}`, 'ON');
       }else{
         btn.classList.replace('amarillo','verde');
         btn.textContent=`Encender\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'OFF');   // encender luz i
+        enviarMQTT(`/luz${i}`, 'OFF');
       }
     });
   }
 }
-
 
 // -------- INICIALIZAR ESTADO LUCES --------
 client.on('connect', ()=>{
@@ -339,10 +316,9 @@ client.on('connect', ()=>{
   const acceso = ahora>=fIni && ahora<=fFin;
   if(!acceso) return;
 
-  // Luces
   botonesLuz.forEach((btn,i)=>{
-    const subTopic = `/luz${i+1}`;          // subtopic sin CT
-    const topic = `${ct}${subTopic}`;       // topic completo con CT
+    const subTopic = `/luz${i+1}`;
+    const topic = `${ct}${subTopic}`;
     client.subscribe(topic,{qos:1});
     client.once('message',(t,msg)=>{
       if(t!==topic) return;
@@ -355,24 +331,17 @@ client.on('connect', ()=>{
         btn.textContent=`Encender\nLuz ${i+1}`;
       }
     });
-    enviarMQTT(subTopic,'get');              // enviarMQTT se encargará de anteponer CT
+    enviarMQTT(subTopic,'get');
   });
 
-  // Portal
   const portalTopic = `${ct}/portal`;
   client.subscribe(portalTopic,{qos:1});
   enviarMQTT('/portal','get');
 
-  // Apto
   const aptoTopic = `${ct}/apto`;
   client.subscribe(aptoTopic,{qos:1});
   enviarMQTT('/apto','get');
 });
-
-
-
-
-
 
 // -------- VALIDACIÓN ACCESO --------
 function validarAcceso(){
@@ -404,28 +373,7 @@ function validarAcceso(){
 validarAcceso();
 setInterval(validarAcceso,60000);
 
-// -------- EVENTOS PORTAL/APTO --------
-btnAbrir.addEventListener('click', ()=>{
-  if(btnAbrir.disabled) return;
-  const tiempo = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-  btnAbrir.classList.replace('verde','amarillo');
-  btnAbrir.textContent="Empuje la Puerta";
-  enviarMQTT('/portal', 'ON');    // abrir portal
-
-// Apartamento
-  setTimeout(()=>{ if(!btnAbrir.disabled){ btnAbrir.classList.replace('amarillo','verde'); btnAbrir.textContent="Abrir Puerta Portal"; } }, tiempo*1000);
-});
-
-btnAbrirApto.addEventListener('click', ()=>{
-  if(btnAbrirApto.disabled) return;
-  const tiempo = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-  btnAbrirApto.classList.replace('verde','amarillo');
-  btnAbrirApto.textContent="Empuje la Puerta";
-  enviarMQTT('/apto', 'ON');      // abrir apartamento
-  setTimeout(()=>{ if(!btnAbrirApto.disabled){ btnAbrirApto.classList.replace('amarillo','verde'); btnAbrirApto.textContent="Abrir Puerta Apartamento"; } }, tiempo*1000);
-});
-
-// -------- POP-UP CONFIGURACIÓN --------
+// -------- POPUP CONFIGURACIÓN --------
 document.addEventListener('DOMContentLoaded', () => {
   const tituloPrincipal = document.getElementById('tituloPrincipal');
   const popupConfig = document.getElementById('popupConfig');
@@ -446,14 +394,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
   }
 
-  // Cerrar popup
   if(cerrarPopup && popupConfig) {
     cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
   }
 
-  // -------- función mostrarPopupConfig dentro de DOMContentLoaded --------
   function mostrarPopupConfig(){
-    if(!popupConfig || !configBotones) return; // proteger si no existen
+    if(!popupConfig || !configBotones) return;
     popupConfig.style.display='block';
     configBotones.innerHTML='';
     const todosBotones = [
@@ -477,12 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
       select.style.padding = '0.4rem';
       select.style.height = '45px';
       select.style.width = '180px';
-
-
-
-
       const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
-
       opciones.forEach(v=>{
         const opt = document.createElement('option');
         opt.value = (v==='Continuo') ? 999999 : v;
@@ -492,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else opt.textContent = `${v/60} Horas`;
         select.appendChild(opt);
       });
-
       const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
       if(valorGuardado) select.value = valorGuardado;
       select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
@@ -502,22 +442,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Exponer la función para el setTimeout
   window.mostrarPopupConfig = mostrarPopupConfig;
 
 });
- 
+
+// -------- POPUP LOG PUERTA --------
+function mostrarPopupLog(tipoPuerta){
+  const popupLog = document.getElementById('popupLog');
+  const tituloLog = document.getElementById('tituloLog');
+  const contenidoLog = document.getElementById('contenidoLog');
+  if(!popupLog || !tituloLog || !contenidoLog) return;
+  tituloLog.textContent = tipoPuerta === 'portal' ? 'Log Puerta Portal' : 'Log Puerta Apartamento';
+  contenidoLog.textContent = `Mostrando log de ${tipoPuerta.toUpperCase()}... (aquí puedes cargar datos reales)`;
+  popupLog.style.display = 'flex';
+}
+document.getElementById('cerrarPopupLog').addEventListener('click', ()=> {
+  document.getElementById('popupLog').style.display='none';
+});
+
+// -------- PULSACIÓN LARGA PORTAL/APTO --------
+function agregarPulsacionLarga(btn, tipoPuerta){
+  let timer;
+  let pulsado = false;
+
+  btn.addEventListener('mousedown', ()=>{ 
+    pulsado = false;
+    timer = setTimeout(()=>{
+      pulsado = true;
+      mostrarPopupLog(tipoPuerta);
+    }, 5000);
+  });
+  btn.addEventListener('mouseup', ()=>{
+    clearTimeout(timer);
+    if(!pulsado){
+      const tiempo = parseInt(localStorage.getItem('tiempo_'+(tipoPuerta==='portal'?'abrir':'abrirApto'))) || 3;
+      btn.classList.replace('verde','amarillo');
+      btn.textContent="Empuje la Puerta";
+      enviarMQTT('/'+tipoPuerta, 'ON');
+      setTimeout(()=>{ 
+        if(!btn.disabled){ 
+          btn.classList.replace('amarillo','verde'); 
+          btn.textContent = tipoPuerta==='portal' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
+        } 
+      }, tiempo*1000);
+    }
+  });
+  btn.addEventListener('mouseleave', ()=> clearTimeout(timer));
+  btn.addEventListener('touchstart', ()=>{
+    pulsado = false;
+    timer = setTimeout(()=>{
+      pulsado = true;
+      mostrarPopupLog(tipoPuerta);
+    },5000);
+  });
+  btn.addEventListener('touchend', ()=>{
+    clearTimeout(timer);
+    if(!pulsado){
+      const tiempo = parseInt(localStorage.getItem('tiempo_'+(tipoPuerta==='portal'?'abrir':'abrirApto'))) || 3;
+      btn.classList.replace('verde','amarillo');
+      btn.textContent="Empuje la Puerta";
+      enviarMQTT('/'+tipoPuerta,'ON');
+      setTimeout(()=>{ 
+        if(!btn.disabled){ 
+          btn.classList.replace('amarillo','verde'); 
+          btn.textContent = tipoPuerta==='portal' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
+        } 
+      }, tiempo*1000);
+    }
+  });
+}
+
+// Aplicar a ambos botones
+agregarPulsacionLarga(btnAbrir,'portal');
+agregarPulsacionLarga(btnAbrirApto,'apto');
+
 </script>
 </body>
-<!-- POPUP CONFIGURACIÓN -->
-<div id="popupConfig" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
-  <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
-    <span id="cerrarPopup" style="position:absolute; top:1rem; right:1rem; cursor:pointer; font-size:2rem;">✖</span>
-    <h2 style="font-size:1.8rem;">Selección de Tiempo</h2>
-    <div id="configBotones" style="margin-top:1rem;"></div>
-  </div>
-</div>
-
-
-
-</html>!D
+</html>
