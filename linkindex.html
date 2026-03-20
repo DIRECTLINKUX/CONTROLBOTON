@@ -449,7 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
 //***********************************************
 // -------- POPUP LOG GENERAL DE PUERTAS --------
 //***********************************************
-// -------- POPUP LOG GENERAL DE PUERTAS --------
 function mostrarPopupLogGeneral(){
   const popupLog = document.getElementById('popupLog');
   const tituloLog = document.getElementById('tituloLog');
@@ -511,51 +510,50 @@ function mostrarPopupLogGeneral(){
   client.on('message', handler);
 }
 
-
-
-
-
-
-//*****************************************************
-// -------- PULSACIÓN LARGA PORTAL/APTO --------
-// Asociar pulsación larga a ambos botones
-//*****************************************************
-function agregarPulsacionLargaGeneral(btn){
+// -------- PULSACIÓN LARGA EN TITULOS DE PUERTAS --------
+function agregarPulsacionLargaTitulo(tituloElemento){
   let timer;
   let pulsado = false;
 
-  const startPress = ()=> {
+  const startPress = () => {
     pulsado = false;
     timer = setTimeout(()=>{
       pulsado = true;
-      mostrarPopupLogGeneral();   // llamamos al log general
+      mostrarPopupLogGeneral();   // mostramos popup log
     }, 5000); // 5 segundos
   };
 
-  const endPress = ()=>{
+  const endPress = () => {
     clearTimeout(timer);
-    if(!pulsado){
-      const tiempo = parseInt(localStorage.getItem(btn.id==='abrir'?'tiempo_abrir':'tiempo_abrirApto')) || 3;
-      btn.classList.replace('verde','amarillo');
-      btn.textContent="Empuje la Puerta";
-      enviarMQTT('/'+(btn.id==='abrir'?'portal':'apto'), 'ON');
-      setTimeout(()=>{ 
-        if(!btn.disabled){ 
-          btn.classList.replace('amarillo','verde'); 
-          btn.textContent = btn.id==='abrir' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
-        } 
-      }, tiempo*1000);
-    }
   };
 
-  ['mousedown','touchstart'].forEach(e=>btn.addEventListener(e, startPress));
-  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>btn.addEventListener(e, endPress));
+  ['mousedown','touchstart'].forEach(e => tituloElemento.addEventListener(e, startPress));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloElemento.addEventListener(e, endPress));
 }
 
-// Aplicar a ambos botones
-agregarPulsacionLargaGeneral(btnAbrir);
-agregarPulsacionLargaGeneral(btnAbrirApto);
 
+//***********************************************************
+// -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
+//***********************************************************
+const titulos = document.querySelectorAll('.panel .titulo-panel'); // ambos títulos
+
+titulos.forEach(titulo => {
+  let timer;
+  let pulsado = false;
+
+  const startPress = () => {
+    pulsado = false;
+    timer = setTimeout(() => {
+      pulsado = true;
+      mostrarPopupLogGeneral(); // misma función para ambos
+    }, 5000); // 5 segundos
+  };
+
+  const endPress = () => clearTimeout(timer);
+
+  ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
+});
 
 
 
