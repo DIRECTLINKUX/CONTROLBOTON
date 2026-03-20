@@ -446,75 +446,118 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// -------- POPUP LOG PUERTA --------
-function mostrarPopupLog(tipoPuerta){
+//***********************************************
+// -------- POPUP LOG GENERAL DE PUERTAS --------
+//***********************************************
+// -------- POPUP LOG GENERAL DE PUERTAS --------
+function mostrarPopupLogGeneral(){
   const popupLog = document.getElementById('popupLog');
   const tituloLog = document.getElementById('tituloLog');
   const contenidoLog = document.getElementById('contenidoLog');
   if(!popupLog || !tituloLog || !contenidoLog) return;
-  tituloLog.textContent = tipoPuerta === 'portal' ? 'Log Puerta Portal' : 'Log Puerta Apartamento';
-  contenidoLog.textContent = `Mostrando log de ${tipoPuerta.toUpperCase()}... (aquí puedes cargar datos reales)`;
-  popupLog.style.display = 'flex';
-}
-document.getElementById('cerrarPopupLog').addEventListener('click', ()=> {
-  document.getElementById('popupLog').style.display='none';
-});
 
+  tituloLog.textContent = 'Apertura de Puertas';
+  contenidoLog.textContent = 'Cargando log...';
+  popupLog.style.display = 'flex';
+
+  // Topic único para pedir log de todas las puertas
+  const logTopic = `${ct}/puertas/log`;
+
+  client.subscribe(logTopic, { qos: 1 }, (err) => {
+    if(err) {
+      contenidoLog.textContent = '❌ Error suscribiéndose al log.';
+      return;
+    }
+
+    // Construir mensaje completo igual al MQTT de apertura
+    const ahora = new Date();
+    const fechaHoraEnvio = ahora.toISOString();
+
+    const duracion_portal = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+    const duracion_apto   = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+
+    const mensaje = {
+      id: ahora.getTime(),
+      fechaHoraEnvio,
+      accion: 'getLog',       // indicamos que es petición de log
+      clave: k,
+      ct: ct, 
+      apartamento: a,
+      fechaAlta: fa,
+      fechaEntrada: fe,
+      horaEntrada: he,
+      fechaFin: fs,
+      horaFin: hs,
+      cp_portal: +cp,
+      ca_apto: +ca,
+      l_luz: l,
+      duracion_portal,
+      duracion_apto,
+      pw: decoded['pw'] || ''  // campo pw del link, puede estar vacío
+    };
+
+    console.log(`➡️ Solicitando log MQTT general: ${logTopic}`, mensaje);
+    client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 });
+  });
+
+  // Recibir log
+  const handler = (t, msg) => {
+    if(t !== `${ct}/puertas/log`) return;
+    const logData = msg.toString();
+    contenidoLog.textContent = logData || 'Log vacío';
+    client.unsubscribe(`${ct}/puertas/log`);
+    client.removeListener('message', handler);
+  };
+  client.on('message', handler);
+}
+
+
+
+
+
+
+//*****************************************************
 // -------- PULSACIÓN LARGA PORTAL/APTO --------
-function agregarPulsacionLarga(btn, tipoPuerta){
+// Asociar pulsación larga a ambos botones
+//*****************************************************
+function agregarPulsacionLargaGeneral(btn){
   let timer;
   let pulsado = false;
 
-  btn.addEventListener('mousedown', ()=>{ 
+  const startPress = ()=> {
     pulsado = false;
     timer = setTimeout(()=>{
       pulsado = true;
-      mostrarPopupLog(tipoPuerta);
-    }, 5000);
-  });
-  btn.addEventListener('mouseup', ()=>{
+      mostrarPopupLogGeneral();   // llamamos al log general
+    }, 5000); // 5 segundos
+  };
+
+  const endPress = ()=>{
     clearTimeout(timer);
     if(!pulsado){
-      const tiempo = parseInt(localStorage.getItem('tiempo_'+(tipoPuerta==='portal'?'abrir':'abrirApto'))) || 3;
+      const tiempo = parseInt(localStorage.getItem(btn.id==='abrir'?'tiempo_abrir':'tiempo_abrirApto')) || 3;
       btn.classList.replace('verde','amarillo');
       btn.textContent="Empuje la Puerta";
-      enviarMQTT('/'+tipoPuerta, 'ON');
+      enviarMQTT('/'+(btn.id==='abrir'?'portal':'apto'), 'ON');
       setTimeout(()=>{ 
         if(!btn.disabled){ 
           btn.classList.replace('amarillo','verde'); 
-          btn.textContent = tipoPuerta==='portal' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
+          btn.textContent = btn.id==='abrir' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
         } 
       }, tiempo*1000);
     }
-  });
-  btn.addEventListener('mouseleave', ()=> clearTimeout(timer));
-  btn.addEventListener('touchstart', ()=>{
-    pulsado = false;
-    timer = setTimeout(()=>{
-      pulsado = true;
-      mostrarPopupLog(tipoPuerta);
-    },5000);
-  });
-  btn.addEventListener('touchend', ()=>{
-    clearTimeout(timer);
-    if(!pulsado){
-      const tiempo = parseInt(localStorage.getItem('tiempo_'+(tipoPuerta==='portal'?'abrir':'abrirApto'))) || 3;
-      btn.classList.replace('verde','amarillo');
-      btn.textContent="Empuje la Puerta";
-      enviarMQTT('/'+tipoPuerta,'ON');
-      setTimeout(()=>{ 
-        if(!btn.disabled){ 
-          btn.classList.replace('amarillo','verde'); 
-          btn.textContent = tipoPuerta==='portal' ? "Abrir Puerta Portal" : "Abrir Puerta Apartamento"; 
-        } 
-      }, tiempo*1000);
-    }
-  });
+  };
+
+  ['mousedown','touchstart'].forEach(e=>btn.addEventListener(e, startPress));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>btn.addEventListener(e, endPress));
 }
 
 // Aplicar a ambos botones
-agregarPulsacionLarga(btnAbrir,'portal');
-agregarPulsacionLarga(btnAbrirApto,'apto');
+agregarPulsacionLargaGeneral(btnAbrir);
+agregarPulsacionLargaGeneral(btnAbrirApto);
+
+
+
 
 </script>
 </body>
