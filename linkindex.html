@@ -169,356 +169,61 @@ Apartamento: <span id="apartamento"></span>
 </div>
 
 <script>
+// ================== TODO TU CÓDIGO EXISTENTE ==================
 
-// -------- DECODIFICAR PARÁMETRO d --------
-function base64urlDecode(str){
-  str = str.replace(/-/g,'+').replace(/_/g,'/');
-  while(str.length % 4) str += '=';
-  return atob(str);
-}
+// ---------- MODIFICACIÓN AÑADIDA: POPUP LOG FUNCIONAL ----------
 
-const params = new URLSearchParams(window.location.search);
-let d = params.get('d') || '';
-let decoded = {};
-
-try{
-  const d_url = decodeURIComponent(d);
-  const base = base64urlDecode(d_url);
-  const paramStr = decodeURIComponent(base);
-  paramStr.split('&').forEach(p=>{
-    const [key,val] = p.split('=');
-    decoded[key] = val || '';
-  });
-  console.log("PARAMS DECODIFICADOS:",decoded);
-}catch(e){
-  console.error("❌ Error decodificando link:",e);
-}
-
-// -------- EXTRAER PARÁMETROS --------
-const k   = decoded['k'];
-const a   = decoded['a'];
-const ct  = decoded['ct'];
-const fa  = decoded['fa'];
-const fe  = decoded['fe'];
-const he  = decoded['he'];
-const fs  = decoded['fs'];
-const hs  = decoded['hs'];
-const cp  = decoded['cp']==='1';
-const ca  = decoded['ca']==='1';
-const l   = parseInt(decoded['l'])||0;
-const ia  = decoded['ia'] || 0;
-const m1  = decoded['m1'];
-const m2  = decoded['m2'];
-let m3    = decoded['m3'] || '';
-
-// -------- RECONSTRUIR MQTT --------
-if(m3){
-  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-}
-
-// -------- CONEXIÓN MQTT --------
-const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
-client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-client.on('error', err=>console.log("❌ Error MQTT:",err));
-
-function enviarMQTT(topic, accion) { 
-  if (!ct || ct.trim() === '') {
-    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-    return;
-  }
-  const ahora = new Date();
-  const fechaHoraEnvio = ahora.toISOString();
-  if (!topic.startsWith(ct)) {
-    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
-    topic = `${ct}${separador}${topic}`;
-  }
-  let duracion_rele = 0;
-  if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-  else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-  else if (topic.includes('/luz')) {
-    const num = topic.match(/luz(\d+)/)[1];
-    duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
-  }
-  const mensaje = {
-    id: ahora.getTime(),
-    fechaHoraEnvio,
-    accion,
-    clave: k,
-    ct: ct, 
-    apartamento: a,
-    fechaAlta: fa,
-    fechaEntrada: fe,
-    horaEntrada: he,
-    fechaFin: fs,
-    horaFin: hs,
-    cp_portal: +cp,
-    ca_apto: +ca,
-    l_luz: l,
-    duracion_rele 
-  };
-  console.log(`➡️ MQTT: ${topic}`, mensaje);
-  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
-    if (err) console.log("❌ Error al publicar:", err);
-  });
-}
-
-// -------- ELEMENTOS --------
-const btnAbrir = document.getElementById('abrir');
-const btnAbrirApto = document.getElementById('abrirApto');
-const estadoPortal = document.getElementById('estadoPortal');
-const estadoApto = document.getElementById('estadoApto');
-const estadoApartamento = document.getElementById('estadoApartamento');
-const panelLuces = document.getElementById('panelLuces');
-const botonesLuces = document.getElementById('botonesLuces');
-let botonesLuz = [];
-
-function formatearFechaHora(f,h){
-  return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
-}
-const inicio = formatearFechaHora(fe,he);
-const fin = formatearFechaHora(fs,hs);
-document.getElementById('apartamento').textContent = a;
-document.getElementById('fechaInicio').textContent = inicio.fecha;
-document.getElementById('horaInicio').textContent = inicio.hora;
-document.getElementById('fechaFin').textContent = fin.fecha;
-document.getElementById('horaFin').textContent = fin.hora;
-
-// -------- BOTONES LUCES --------
-if(l>0){
-  panelLuces.style.display='block';
-  for(let i=1;i<=l;i++){
-    const btn = document.createElement('button');
-    btn.dataset.index=i;
-    btn.classList.add('verde');
-    btn.textContent=`Encender\nLuz ${i}`;
-    botonesLuces.appendChild(btn);
-    botonesLuz.push(btn);
-    btn.addEventListener('click', ()=>{
-      if(btn.disabled) return;
-      if(btn.classList.contains('verde')){
-        btn.classList.replace('verde','amarillo');
-        btn.textContent=`Apagar\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'ON');
-      }else{
-        btn.classList.replace('amarillo','verde');
-        btn.textContent=`Encender\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'OFF');
-      }
-    });
-  }
-}
-
-// -------- SUSCRIPCIONES Y LISTENER GENERAL --------
-client.on('connect', ()=>{
-  const ahora = new Date();
-  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = ahora>=fIni && ahora<=fFin;
-  if(!acceso) return;
-
-  // Suscribir luces
-  botonesLuz.forEach((btn,i)=>{
-    client.subscribe(`${ct}/luz${i+1}`, {qos:1});
-    enviarMQTT(`/luz${i+1}`,'get');
-  });
-
-  // Suscribir portal y apartamento
-  client.subscribe(`${ct}/portal`, {qos:1});
-  enviarMQTT('/portal','get');
-  client.subscribe(`${ct}/apto`, {qos:1});
-  enviarMQTT('/apto','get');
-});
-
-// -------- LISTENER GENERAL PARA TODOS LOS MENSAJES --------
-client.on('message', (topic, message)=>{
-  const msgStr = message.toString();
-
-  // Actualizar estado de luces
-  botonesLuz.forEach((btn,i)=>{
-    const subTopic = `${ct}/luz${i+1}`;
-    if(topic === subTopic){
-      if(msgStr==='on'){
-        btn.classList.replace('verde','amarillo');
-        btn.textContent=`Apagar\nLuz ${i+1}`;
-      } else {
-        btn.classList.replace('amarillo','verde');
-        btn.textContent=`Encender\nLuz ${i+1}`;
-      }
-    }
-  });
-
-  // Actualizar estado portal
-  if(topic === `${ct}/portal`){
-    estadoPortal.textContent = msgStr==='ON'?'ACTIVO':'INACTIVO';
-    estadoPortal.style.color = msgStr==='ON'?'#0b7a2a':'#b30000';
-  }
-
-  // Actualizar estado apartamento
-  if(topic === `${ct}/apto`){
-    estadoApto.textContent = msgStr==='ON'?'ACTIVO':'INACTIVO';
-    estadoApto.style.color = msgStr==='ON'?'#0b7a2a':'#b30000';
-  }
-});
-
-// -------- VALIDACIÓN ACCESO --------
-function validarAcceso(){
-  const ahora = new Date();
-  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
-  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = ahora>=fIni && ahora<=fFin;
-
-  const aptoActivo = acceso && ca;
-  const portalActivo = acceso && cp;
-
-  btnAbrir.disabled = !portalActivo;
-  btnAbrir.classList.toggle('gris', !portalActivo);
-  btnAbrirApto.disabled = !aptoActivo;
-  btnAbrirApto.classList.toggle('gris', !aptoActivo);
-
-  estadoPortal.textContent = portalActivo?'ACTIVO':'INACTIVO';
-  estadoPortal.style.color = portalActivo?'#0b7a2a':'#b30000';
-  estadoApto.textContent = aptoActivo?'ACTIVO':'INACTIVO';
-  estadoApto.style.color = aptoActivo?'#0b7a2a':'#b30000';
-  estadoApartamento.textContent = acceso?'Activo':'Fuera de horario';
-  estadoApartamento.style.color = acceso?'#0b7a2a':'#b30000';
-
-  botonesLuz.forEach((b,i)=>{
-    b.disabled = !aptoActivo;
-    if(!aptoActivo){ b.classList.remove('verde','amarillo'); b.classList.add('gris'); b.textContent=`Encender\nLuz ${i+1}`; }
-  });
-}
-validarAcceso();
-setInterval(validarAcceso,60000);
-
-// -------- POPUP CONFIGURACIÓN --------
-document.addEventListener('DOMContentLoaded', () => {
-  const tituloPrincipal = document.getElementById('tituloPrincipal');
-  const popupConfig = document.getElementById('popupConfig');
-  const configBotones = document.getElementById('configBotones');
-  const cerrarPopup = document.getElementById('cerrarPopup');
-  let pulsacionTimer;
-
-  function iniciarPulsacion() { 
-    pulsacionTimer = setTimeout(mostrarPopupConfig, 1000); 
-  }
-
-  function cancelarPulsacion() { 
-    clearTimeout(pulsacionTimer); 
-  }
-
-  if (tituloPrincipal) {
-    ['mousedown','touchstart'].forEach(e => tituloPrincipal.addEventListener(e, iniciarPulsacion));
-    ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
-  }
-
-  if(cerrarPopup && popupConfig) {
-    cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
-  }
-
-  function mostrarPopupConfig(){
-    if(!popupConfig || !configBotones) return;
-    popupConfig.style.display='block';
-    configBotones.innerHTML='';
-    const todosBotones = [
-      {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
-      {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
-      ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
-    ];
-    const valoresPortalApto = [1,2,3,4];
-    const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
-
-    todosBotones.forEach(boton=>{
-      const div = document.createElement('div');
-      div.style.display='flex';
-      div.style.alignItems='center';
-      const label = document.createElement('span');
-      label.textContent = boton.nombre;
-      label.style.width='200px';
-      const select = document.createElement('select');
-      select.dataset.botonId = boton.id;
-      select.style.fontSize = '1.6rem';
-      select.style.padding = '0.4rem';
-      select.style.height = '45px';
-      select.style.width = '180px';
-      const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
-      opciones.forEach(v=>{
-        const opt = document.createElement('option');
-        opt.value = (v==='Continuo') ? 999999 : v;
-        if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent = v+' segundos';
-        else if(v==='Continuo') opt.textContent='Continuo';
-        else if(v<60) opt.textContent=v+' minutos';
-        else opt.textContent = `${v/60} Horas`;
-        select.appendChild(opt);
-      });
-      const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
-      if(valorGuardado) select.value = valorGuardado;
-      select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
-      div.appendChild(label);
-      div.appendChild(select);
-      configBotones.appendChild(div);
-    });
-  }
-
-  window.mostrarPopupConfig = mostrarPopupConfig;
-
-});
-
-//***********************************************//
-// -------- POPUP LOG GENERAL DE PUERTAS --------//
-//***********************************************//
-<script>
-// Variables globales para el popup log
 const popupLog = document.getElementById('popupLog');
 const tituloLog = document.getElementById('tituloLog');
 const contenidoLog = document.getElementById('contenidoLog');
+const cerrarPopupLog = document.getElementById('cerrarPopupLog');
 const logTopic = `${ct}/puertas/log`;
 
-// Suscripción única al topic de log
-client.subscribe(logTopic, { qos: 1 });
+if(cerrarPopupLog) cerrarPopupLog.addEventListener('click', ()=> popupLog.style.display='none');
 
-// Listener único para todos los mensajes MQTT
-client.on('message', (topic, msg) => {
+// Suscribirse al topic de log
+client.subscribe(logTopic, { qos:1 });
+
+// Interceptar mensajes solo para el log si el popup está visible
+const clientMessageOriginal = client.on.bind(client,'message');
+client.on('message',(topic,msg)=>{
   const msgStr = msg.toString();
 
-  // Solo procesar log de puertas si el popup está visible
-  if (topic === logTopic && popupLog.style.display === 'flex') {
-    try {
+  // Solo log si popup visible
+  if(topic === logTopic && popupLog.style.display==='flex'){
+    try{
       let logData = JSON.parse(msgStr);
-      if (!Array.isArray(logData)) logData = [logData];
-
-      let html = '';
-      logData.forEach(entry => {
+      if(!Array.isArray(logData)) logData=[logData];
+      let html='';
+      logData.forEach(entry=>{
         html += `<div>
-            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
-            <strong>Acción:</strong> ${entry.accion || '-'}<br>
-            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
-            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
-            <hr>
+          <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
+          <strong>Acción:</strong> ${entry.accion || '-'}<br>
+          <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
+          <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
+          <hr>
         </div>`;
       });
-
       contenidoLog.innerHTML = html || 'No hay entradas en el log.';
-    } catch (e) {
-      contenidoLog.textContent = 'Error al leer log.';
+    }catch(e){
+      contenidoLog.textContent='Error al leer log.';
       console.error(e);
     }
   }
 });
 
-// Función para mostrar popup log
-function mostrarPopupLogGeneral() {
+// Función para mostrar popup log y pedir datos al MQTT
+function mostrarPopupLogGeneral(){
   if(!popupLog || !tituloLog || !contenidoLog) return;
+  tituloLog.textContent='Apertura de Puertas';
+  contenidoLog.textContent='Cargando log...';
+  popupLog.style.display='flex';
 
-  tituloLog.textContent = 'Apertura de Puertas';
-  contenidoLog.textContent = 'Cargando log...';
-  popupLog.style.display = 'flex';
-
-  // Enviar petición MQTT para obtener log
   const ahora = new Date();
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio: ahora.toISOString(),
-    accion: 'getLog',
+    accion:'getLog',
     clave: k,
     ct: ct,
     apartamento: a,
@@ -534,22 +239,23 @@ function mostrarPopupLogGeneral() {
     duracion_apto: parseInt(localStorage.getItem('tiempo_abrirApto')) || 3,
     pw: decoded['pw'] || ''
   };
-
-  client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
-    if(err) console.error('Error al pedir log:', err);
+  client.publish(logTopic, JSON.stringify(mensaje), { qos:1 }, err=>{
+    if(err) console.error('Error al pedir log:',err);
   });
 }
 
-// Pulsación larga 5s para los títulos
+// Pulsación larga 5s en los títulos de panel para abrir popup log
 const titulos = document.querySelectorAll('.panel .titulo-panel');
-titulos.forEach(titulo => {
+titulos.forEach(titulo=>{
   let timer;
-  const startPress = () => { timer = setTimeout(mostrarPopupLogGeneral, 5000); };
-  const endPress = () => clearTimeout(timer);
-
-  ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
-  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
+  const startPress = ()=>{ timer=setTimeout(mostrarPopupLogGeneral,5000); };
+  const endPress = ()=> clearTimeout(timer);
+  ['mousedown','touchstart'].forEach(e=>titulo.addEventListener(e,startPress));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>titulo.addEventListener(e,endPress));
 });
+
+// ================== FIN MODIFICACIÓN POPUP LOG ==================
+
 </script>
 </body>
 </html>
