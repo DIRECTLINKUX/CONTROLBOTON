@@ -463,31 +463,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-//***********************************************
-// -------- POPUP LOG GENERAL DE PUERTAS --------
-//***********************************************
+//***********************************************//
+// -------- POPUP LOG GENERAL DE PUERTAS --------//
+//***********************************************//
+<script>
+// Variables globales para el popup log
+const popupLog = document.getElementById('popupLog');
+const tituloLog = document.getElementById('tituloLog');
+const contenidoLog = document.getElementById('contenidoLog');
+const logTopic = `${ct}/puertas/log`;
+
+// Suscripción única al topic de log
+client.subscribe(logTopic, { qos: 1 });
+
+// Listener único para todos los mensajes MQTT
+client.on('message', (topic, msg) => {
+  const msgStr = msg.toString();
+
+  // Solo procesar log de puertas si el popup está visible
+  if (topic === logTopic && popupLog.style.display === 'flex') {
+    try {
+      let logData = JSON.parse(msgStr);
+      if (!Array.isArray(logData)) logData = [logData];
+
+      let html = '';
+      logData.forEach(entry => {
+        html += `<div>
+            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
+            <strong>Acción:</strong> ${entry.accion || '-'}<br>
+            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
+            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
+            <hr>
+        </div>`;
+      });
+
+      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
+    } catch (e) {
+      contenidoLog.textContent = 'Error al leer log.';
+      console.error(e);
+    }
+  }
+});
+
+// Función para mostrar popup log
 function mostrarPopupLogGeneral() {
-  const popupLog = document.getElementById('popupLog');
-  const tituloLog = document.getElementById('tituloLog');
-  const contenidoLog = document.getElementById('contenidoLog');
   if(!popupLog || !tituloLog || !contenidoLog) return;
 
   tituloLog.textContent = 'Apertura de Puertas';
-  contenidoLog.textContent = 'Cargando log...'; // mientras llega el MQTT
-
+  contenidoLog.textContent = 'Cargando log...';
   popupLog.style.display = 'flex';
 
-  // -------- Enviar petición MQTT para obtener log --------
+  // Enviar petición MQTT para obtener log
   const ahora = new Date();
-  const fechaHoraEnvio = ahora.toISOString();
-  const logTopic = `${ct}/puertas/log`;
-
   const mensaje = {
     id: ahora.getTime(),
-    fechaHoraEnvio,
+    fechaHoraEnvio: ahora.toISOString(),
     accion: 'getLog',
     clave: k,
-    ct: ct, 
+    ct: ct,
     apartamento: a,
     fechaAlta: fa,
     fechaEntrada: fe,
@@ -505,56 +538,18 @@ function mostrarPopupLogGeneral() {
   client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if(err) console.error('Error al pedir log:', err);
   });
-
-  // -------- Escuchar respuesta del ESP --------
-  client.subscribe(logTopic, { qos: 1 });
-  const listener = (topic, msg) => {
-    if(topic !== logTopic) return;
-    try {
-      const logData = JSON.parse(msg.toString());
-      let html = '';
-      logData.forEach(entry => {
-        html += `<div>
-          <strong>Puerta:</strong> ${entry.puerta}<br>
-          <strong>Acción:</strong> ${entry.accion}<br>
-          <strong>Fecha/Hora:</strong> ${entry.fechaHora}<br>
-          <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
-          <hr>
-        </div>`;
-      });
-      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
-    } catch(e) {
-      contenidoLog.textContent = 'Error al leer log.';
-      console.error(e);
-    }
-    client.removeListener('message', listener);
-  };
-  client.on('message', listener);
 }
 
-//***********************************************************
-// -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
-//***********************************************************
+// Pulsación larga 5s para los títulos
 const titulos = document.querySelectorAll('.panel .titulo-panel');
-
 titulos.forEach(titulo => {
   let timer;
-  let pulsado = false;
-
-  const startPress = () => {
-    pulsado = false;
-    timer = setTimeout(() => {
-      pulsado = true;
-      mostrarPopupLogGeneral();
-    }, 5000);
-  };
-
+  const startPress = () => { timer = setTimeout(mostrarPopupLogGeneral, 5000); };
   const endPress = () => clearTimeout(timer);
 
   ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
 });
-
 </script>
 </body>
 </html>
