@@ -360,6 +360,10 @@ client.on('message', (topic, message)=>{
   }
 });
 
+
+
+
+
 // -------- VALIDACIÓN ACCESO --------
 function validarAcceso(){
   const ahora = new Date();
@@ -389,6 +393,10 @@ function validarAcceso(){
 }
 validarAcceso();
 setInterval(validarAcceso,60000);
+
+
+
+
 
 // -------- POPUP CONFIGURACIÓN --------
 document.addEventListener('DOMContentLoaded', () => {
@@ -543,6 +551,9 @@ function mostrarPopupLogGeneral() {
 }
 </script>
 
+
+
+
 <script>
 // ***********************************************************
 // -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
@@ -566,7 +577,9 @@ titulos.forEach(titulo => {
   ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
 });
+
 </script>
+
 
 </body>
 </html>
