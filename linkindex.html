@@ -545,7 +545,7 @@ function mostrarPopupLogGeneral() {
 
 
 
-
+<script>
 //***********************************************************
 // -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
 //***********************************************************
@@ -568,6 +568,7 @@ titulos.forEach(titulo => {
   ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
 });
+</script>
 
 </script>
 </body>
