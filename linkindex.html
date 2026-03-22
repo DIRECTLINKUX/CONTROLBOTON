@@ -306,31 +306,33 @@ if(l>0){
     botonesLuz.push(btn);
 
     // 👇 LISTENER AQUÍ (MEJOR)
-    btn.addEventListener('click', ()=>{
-      if(btn.disabled) return;
+ btn.addEventListener('click', ()=>{
+  if(btn.disabled) return;
 
-      const duracion = parseInt(localStorage.getItem('tiempo_' + btn.dataset.index)) || 3600;
+  const valor = parseInt(localStorage.getItem('tiempo_' + btn.dataset.index)) || 60;
 
-      if(btn.classList.contains('verde')){
-        // ENCENDER
-        btn.classList.replace('verde','amarillo');
-        btn.textContent = `Apagar\nLuz ${btn.dataset.index}`;
-        enviarMQTT(`/luz${btn.dataset.index}`, 'ON');
+  if(btn.classList.contains('verde')){
+    // ENCENDER
+    btn.classList.replace('verde','amarillo');
+    btn.textContent = `Apagar\nLuz ${btn.dataset.index}`;
+    enviarMQTT(`/luz${btn.dataset.index}`, 'ON');
 
-        setTimeout(()=>{
-          if(btn.classList.contains('amarillo')){
-            btn.classList.replace('amarillo','verde');
-            btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
-          }
-        }, duracion*1000);
+    if(valor !== 999999){
+      setTimeout(()=>{
+        if(btn.classList.contains('amarillo')){
+          btn.classList.replace('amarillo','verde');
+          btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
+        }
+      }, valor * 60 * 1000);
+    }
 
-      } else if(btn.classList.contains('amarillo')){
-        // APAGAR MANUAL
-        btn.classList.replace('amarillo','verde');
-        btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
-        enviarMQTT(`/luz${btn.dataset.index}`, 'OFF');
-      }
-    });
+  } else if(btn.classList.contains('amarillo')){
+    // APAGAR MANUAL
+    btn.classList.replace('amarillo','verde');
+    btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
+    enviarMQTT(`/luz${btn.dataset.index}`, 'OFF');
+  }
+});
   }
 }
 
