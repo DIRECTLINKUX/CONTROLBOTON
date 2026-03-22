@@ -360,40 +360,65 @@ client.on('message', (topic, message)=>{
   }
 });
 
-
-
-
-
-// -------- VALIDACIÓN ACCESO --------
-function validarAcceso(){
+function validarAcceso() {
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
-  const acceso = ahora>=fIni && ahora<=fFin;
+  const acceso = ahora >= fIni && ahora <= fFin;
 
   const aptoActivo = acceso && ca;
   const portalActivo = acceso && cp;
 
-  btnAbrir.disabled = !portalActivo;
-  btnAbrir.classList.toggle('gris', !portalActivo);
+  // --- Puerta Portal ---
+  btnAbrir.disabled = !portalActivo;   // primero definir disabled
+  if(btnAbrir.disabled){
+    btnAbrir.classList.remove('verde','amarillo');
+    btnAbrir.classList.add('gris');
+    document.querySelector('.panel.portal .titulo-panel').textContent = 'Puerta Portal - INACTIVO';
+  } else {
+    btnAbrir.classList.remove('gris','amarillo');
+    btnAbrir.classList.add('verde');
+    document.querySelector('.panel.portal .titulo-panel').textContent = 'Puerta Portal - ACTIVO';
+  }
+
+  // --- Puerta Apartamento ---
   btnAbrirApto.disabled = !aptoActivo;
-  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+  if(btnAbrirApto.disabled){
+    btnAbrirApto.classList.remove('verde','amarillo');
+    btnAbrirApto.classList.add('gris');
+    document.querySelector('.panel.apto .titulo-panel').textContent = 'Puerta Apartamento - INACTIVO';
+  } else {
+    btnAbrirApto.classList.remove('gris','amarillo');
+    btnAbrirApto.classList.add('verde');
+    document.querySelector('.panel.apto .titulo-panel').textContent = 'Puerta Apartamento - ACTIVO';
+  }
 
-  estadoPortal.textContent = portalActivo?'ACTIVO':'INACTIVO';
-  estadoPortal.style.color = portalActivo?'#0b7a2a':'#b30000';
-  estadoApto.textContent = aptoActivo?'ACTIVO':'INACTIVO';
-  estadoApto.style.color = aptoActivo?'#0b7a2a':'#b30000';
-  estadoApartamento.textContent = acceso?'Activo':'Fuera de horario';
-  estadoApartamento.style.color = acceso?'#0b7a2a':'#b30000';
+  // --- Estado general ---
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
+  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
+  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 
+  // --- Botones de luces ---
   botonesLuz.forEach((b,i)=>{
-    b.disabled = !aptoActivo;
-    if(!aptoActivo){ b.classList.remove('verde','amarillo'); b.classList.add('gris'); b.textContent=`Encender\nLuz ${i+1}`; }
+    if (!acceso) { // gris solo si fuera de fechas/hora
+      b.disabled = true;
+      b.classList.remove('verde','amarillo');
+      b.classList.add('gris');
+      b.textContent = `Encender\nLuz ${i+1}`;
+    } else {
+      b.disabled = false;
+      b.classList.remove('gris','amarillo');
+      b.classList.add('verde');
+      b.textContent = `Encender\nLuz ${i+1}`;
+    }
   });
 }
+
 validarAcceso();
 setInterval(validarAcceso,60000);
-
 
 
 
