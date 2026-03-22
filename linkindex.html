@@ -126,28 +126,32 @@ Apartamento: <span id="apartamento"></span>
   </div>
 </div>
 
+
+<!-- Panel Portal -->
 <div class="panel portal">
-<div class="titulo-panel">Puerta Portal</div>
-<div class="estadoPuerta" id="estadoPortal"></div>
-<div class="botones">
-<button id="abrir" class="verde">Abrir Puerta Portal</button>
-</div>
+  <button class="titulo-panel" id="tituloPortal">Puerta Portal</button>
+  <div class="estadoPuerta" id="estadoPortal"></div>
+  <div class="botones">
+    <button id="abrir" class="verde">Abrir Puerta Portal</button>
+  </div>
 </div>
 
+<!-- Panel Apartamento -->
 <div class="panel apto">
-<div class="titulo-panel">Puerta Apartamento</div>
-<div class="estadoPuerta" id="estadoApto"></div>
-<div class="botones">
-<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+  <button class="titulo-panel" id="tituloApto">Puerta Apartamento</button>
+  <div class="estadoPuerta" id="estadoApto"></div>
+  <div class="botones">
+    <button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+  </div>
 </div>
-</div>
+
+
 
 <div class="panel luces" id="panelLuces" style="display:none;">
 <div class="titulo-panel">Luces</div>
 <div class="botones" id="botonesLuces"></div>
 </div>
 
-</div>
 
 <!-- POPUP CONFIGURACIÓN -->
 <div id="popupConfig" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
@@ -714,6 +718,9 @@ function mostrarPopupLogGeneral() {
 
 
 <script>
+
+
+
 // ***********************************************************
 // -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
 // ***********************************************************
@@ -738,6 +745,36 @@ titulos.forEach(titulo => {
 });
 
 </script>
+// -------- PULSACIÓN LARGA EN BOTONES DE PUERTAS --------
+const botonesTitulos = [
+  document.getElementById('tituloPortal'),
+  document.getElementById('tituloApto')
+];
+
+botonesTitulos.forEach(boton => {
+  if(!boton) return; // Por si no existe
+
+  let timer; // Timer para 2 segundos
+
+  // Comienza la pulsación
+  const startPress = () => {
+    timer = setTimeout(() => {
+      mostrarPopupLogGeneral(); // Solo si se mantiene 2s
+    }, 2000); // 2000 ms = 2 segundos
+  };
+
+  // Termina la pulsación
+  const endPress = () => {
+    clearTimeout(timer); // Cancela si se suelta antes
+  };
+
+  // Detectar inicio de pulsación
+  ['mousedown', 'touchstart'].forEach(e => boton.addEventListener(e, startPress));
+
+  // Detectar final de pulsación
+  ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(e => boton.addEventListener(e, endPress));
+});
+
 
 
 </body>
