@@ -683,6 +683,7 @@ function mostrarPopupLogGeneral() {
     pw: decoded['pw'] || ''
   };
 
+  console.log("➡️ MQTT LOG REQUEST:", mensaje);
   client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if(err) console.error('Error al pedir log:', err);
   });
