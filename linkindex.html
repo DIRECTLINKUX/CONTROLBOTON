@@ -407,40 +407,33 @@ setInterval(validarAcceso, 60000);
 btnAbrir.addEventListener('click', () => {
   if(btnAbrir.disabled) return;
 
-  // Cambiar visual a amarillo
-  btnAbrir.classList.replace('verde','amarillo');
-  btnAbrir.textContent = 'Cerrar\nPuerta Portal';
-
-  // Enviar MQTT ON
-  enviarMQTT('/portal', 'ON');
-
-  // Volver a verde después de la duración
+  // Poner botón en amarillo durante el tiempo del popup
   const duracion = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  btnAbrir.classList.replace('verde','amarillo');
+  btnAbrir.textContent = `Abriendo\nPuerta Portal`;
   setTimeout(()=>{
     btnAbrir.classList.replace('amarillo','verde');
-    btnAbrir.textContent = 'Abrir Puerta Portal';
-    enviarMQTT('/portal','OFF'); // si quieres enviar OFF automático
+    btnAbrir.textContent = `Abrir Puerta Portal`;
   }, duracion*1000);
+
+  // Enviar solo ON al ESP
+  enviarMQTT('/portal', 'ON');
 });
 
 btnAbrirApto.addEventListener('click', () => {
   if(btnAbrirApto.disabled) return;
 
-  // Cambiar visual a amarillo
-  btnAbrirApto.classList.replace('verde','amarillo');
-  btnAbrirApto.textContent = 'Cerrar\nPuerta Apartamento';
-
-  // Enviar MQTT ON
-  enviarMQTT('/apto', 'ON');
-
-  // Volver a verde después de la duración
   const duracion = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  btnAbrirApto.classList.replace('verde','amarillo');
+  btnAbrirApto.textContent = `Abriendo\nPuerta Apartamento`;
   setTimeout(()=>{
     btnAbrirApto.classList.replace('amarillo','verde');
-    btnAbrirApto.textContent = 'Abrir Puerta Apartamento';
-    enviarMQTT('/apto','OFF'); // si quieres enviar OFF automático
+    btnAbrirApto.textContent = `Abrir Puerta Apartamento`;
   }, duracion*1000);
+
+  enviarMQTT('/apto', 'ON');
 });
+
 
 
 
