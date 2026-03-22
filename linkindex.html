@@ -426,9 +426,13 @@ function validarAcceso() {
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = ahora >= fIni && ahora <= fFin;
 
-  // --- Portal y apartamento: solo fecha/hora ---
-  const portalActivo = acceso; // no depende de cp
-  const aptoActivo = acceso;   // no depende de ca
+// Portal depende de acceso y cp
+const portalActivo = acceso && cp;
+
+// Apartamento depende de acceso y ca
+const aptoActivo = acceso && ca;
+
+
 
   // Portal
   btnAbrir.disabled = !portalActivo;
