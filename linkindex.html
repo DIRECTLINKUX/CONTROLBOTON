@@ -348,16 +348,16 @@ client.on('message', (topic, message)=>{
   });
 });
 
-
+// -------- VALIDACIÓN ACCESO --------
 function validarAcceso() {
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = ahora >= fIni && ahora <= fFin;
 
-  // --- Portal y apartamento (solo fecha/hora y cp/ca) ---
-  const portalActivo = acceso && cp;
-  const aptoActivo = acceso && ca;
+  // --- Portal y apartamento: solo fecha/hora ---
+  const portalActivo = acceso; // no depende de cp
+  const aptoActivo = acceso;   // no depende de ca
 
   // Portal
   btnAbrir.disabled = !portalActivo;
@@ -400,6 +400,23 @@ function validarAcceso() {
 // Ejecutar al cargar y cada minuto
 validarAcceso();
 setInterval(validarAcceso, 60000);
+
+
+// -------- LISTENER CLICK PORTAL/APARTAMENTO --------
+btnAbrir.addEventListener('click', () => {
+  if(btnAbrir.disabled) return;
+  enviarMQTT('/portal', 'ON');
+  const duracion = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  setTimeout(()=> enviarMQTT('/portal','OFF'), duracion*1000);
+});
+
+btnAbrirApto.addEventListener('click', () => {
+  if(btnAbrirApto.disabled) return;
+  enviarMQTT('/apto', 'ON');
+  const duracion = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  setTimeout(()=> enviarMQTT('/apto','OFF'), duracion*1000);
+});
+
 
 
 
