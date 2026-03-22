@@ -346,18 +346,6 @@ client.on('message', (topic, message)=>{
       }
     }
   });
-
-  // Actualizar estado portal
-  if(topic === `${ct}/portal`){
-    estadoPortal.textContent = msgStr==='ON'?'ACTIVO':'INACTIVO';
-    estadoPortal.style.color = msgStr==='ON'?'#0b7a2a':'#b30000';
-  }
-
-  // Actualizar estado apartamento
-  if(topic === `${ct}/apto`){
-    estadoApto.textContent = msgStr==='ON'?'ACTIVO':'INACTIVO';
-    estadoApto.style.color = msgStr==='ON'?'#0b7a2a':'#b30000';
-  }
 });
 
 
