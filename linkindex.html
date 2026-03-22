@@ -360,38 +360,30 @@ client.on('message', (topic, message)=>{
   }
 });
 
+
 function validarAcceso() {
   const ahora = new Date();
   const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = ahora >= fIni && ahora <= fFin;
 
-  const aptoActivo = acceso && ca;
+  // --- Portal y apartamento (solo fecha/hora y cp/ca) ---
   const portalActivo = acceso && cp;
+  const aptoActivo = acceso && ca;
 
-  // --- Puerta Portal ---
-  btnAbrir.disabled = !portalActivo;   // primero definir disabled
-  if(btnAbrir.disabled){
-    btnAbrir.classList.remove('verde','amarillo');
-    btnAbrir.classList.add('gris');
-    document.querySelector('.panel.portal .titulo-panel').textContent = 'Puerta Portal - INACTIVO';
-  } else {
-    btnAbrir.classList.remove('gris','amarillo');
-    btnAbrir.classList.add('verde');
-    document.querySelector('.panel.portal .titulo-panel').textContent = 'Puerta Portal - ACTIVO';
-  }
+  // Portal
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris', !portalActivo);
+  btnAbrir.classList.toggle('verde', portalActivo);
+  document.querySelector('.panel.portal .titulo-panel').textContent =
+    portalActivo ? 'Puerta Portal - ACTIVO' : 'Puerta Portal - INACTIVO';
 
-  // --- Puerta Apartamento ---
+  // Apartamento
   btnAbrirApto.disabled = !aptoActivo;
-  if(btnAbrirApto.disabled){
-    btnAbrirApto.classList.remove('verde','amarillo');
-    btnAbrirApto.classList.add('gris');
-    document.querySelector('.panel.apto .titulo-panel').textContent = 'Puerta Apartamento - INACTIVO';
-  } else {
-    btnAbrirApto.classList.remove('gris','amarillo');
-    btnAbrirApto.classList.add('verde');
-    document.querySelector('.panel.apto .titulo-panel').textContent = 'Puerta Apartamento - ACTIVO';
-  }
+  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+  btnAbrirApto.classList.toggle('verde', aptoActivo);
+  document.querySelector('.panel.apto .titulo-panel').textContent =
+    aptoActivo ? 'Puerta Apartamento - ACTIVO' : 'Puerta Apartamento - INACTIVO';
 
   // --- Estado general ---
   estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
@@ -401,7 +393,7 @@ function validarAcceso() {
   estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
   estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
 
-  // --- Botones de luces ---
+  // --- Luces ---
   botonesLuz.forEach((b,i)=>{
     if (!acceso) { // gris solo si fuera de fechas/hora
       b.disabled = true;
@@ -409,7 +401,7 @@ function validarAcceso() {
       b.classList.add('gris');
       b.textContent = `Encender\nLuz ${i+1}`;
     } else {
-      b.disabled = false;
+      b.disabled = false;  // se puede pulsar según MQTT después
       b.classList.remove('gris','amarillo');
       b.classList.add('verde');
       b.textContent = `Encender\nLuz ${i+1}`;
@@ -417,8 +409,10 @@ function validarAcceso() {
   });
 }
 
+// Ejecutar al cargar y cada minuto
 validarAcceso();
-setInterval(validarAcceso,60000);
+setInterval(validarAcceso, 60000);
+
 
 
 
