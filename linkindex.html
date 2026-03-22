@@ -505,7 +505,19 @@ document.addEventListener('DOMContentLoaded', () => {
       ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
     ];
     const valoresPortalApto = [1,2,3,4];
-    const valoresLuces = [1,5,15,30,45,60,120,180,240,300,360,420,480,540,600,'Continuo'];
+   
+    const valoresLuces = [
+          1,5,15,30,45,
+          60,120,180,240,300,360,420,480,540,600, // hasta 10h
+          660,720,780,840,900,960,1020,1080,1140,1200, // 11h a 20h
+          1260,1320,1380,1440, // 21h a 24h
+         'Continuo'
+    ];
+
+
+
+
+
 
     todosBotones.forEach(boton=>{
       const div = document.createElement('div');
