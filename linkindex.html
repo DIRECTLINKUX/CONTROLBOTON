@@ -235,6 +235,12 @@ function enviarMQTT(topic, accion) {
   let duracion_rele = 0;
   if (topic.includes('/portal')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
   else if (topic.includes('/apto')) duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+      else if (topic.includes('/luz')) {
+           const num = topic.match(/luz(\d+)/)[1];
+           const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
+           duracion_rele = minutos * 60; // 🔥 convertir a segundos
+           }
+        }
   else if (topic.includes('/luz')) {
     const num = topic.match(/luz(\d+)/)[1];
     duracion_rele = parseInt(localStorage.getItem('tiempo_' + num)) || 36000;
