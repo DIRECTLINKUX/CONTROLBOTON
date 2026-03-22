@@ -1,514 +1,719 @@
-// *********************************************************************************************************************  
-// *****                                   PROGRAMA DEL ESP DEL APARTAMENTO 
-// *********************************************************************************************************************
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
-#include <time.h>
-#include <map>
-#include <Crypto.h>
-#include <SHA256.h>
-#include <base64.h> // para base64::encode
-
-// *********************************************************************************************************************
-// ******************************************** PARAMETROS A MODIFICAR *************************************************
-// *********************************************************************************************************************
-#define NUM_APARTAMENTO  "1"               // Nombre del apartamento DEL JS que controla este ESP 
-#define TIPO_RELE        "portal"          // Tipo de rele: portal | apto | luz1 | luz2 | luz3 ...
-#define IA_APTO          "STWS"            // IDENTIFICADOR DEL APARTAMENTO 
-#define PIN_LUZ          5                 // Pin físico donde está conectado el relé
-
-const char* ssid         = "DIGIFIBRA-A88F";
-const char* passwordWifi = "MRLGG7PC3H";
-
-// *********************************************************************************************************************
-// ================= MQTT CONFIG =================
-// *********************************************************************************************************************  
-const char* mqtt_server  = "d86b09e8e2a245258b22169025dbbea4.s1.eu.hivemq.cloud";
-const int   mqtt_port    = 8883;
-const char* mqtt_user    = "azbycx001";
-const char* mqtt_pass    = "A1ctxnpq";
-
-// *********************************************************************************************************************
-// ================= CLAVE SECRETA =================
-// *********************************************************************************************************************  
-
-const String CLAVE_SECRETA = "1234567890";
-
-// *********************************************************************************************************************
-// ================= VARIABLES MQTT =================
-// *********************************************************************************************************************  
-String ct;           // Clave base64 para topic
-String topic_sub;     // Topic completo para suscribirse
-
-// *********************************************************************************************************************
-// ================= VARIABLES GLOBALES =================
-// *********************************************************************************************************************  
-
-unsigned long releApagarEn = 0; // Tiempo en ms para apagar automáticamente el relé
-String ct_local;  // Variable global para CT, calculada solo una vez
-
-
-// *********************************************************************************************************************
-// ================= LOG RAM =================
-// *********************************************************************************************************************  
-#define MAX_RAM_LOG  20
-
-struct LogEntry {
-    char fechaHora[24];    // "YYYYMMDD HHMMSS.mmm"
-    char accion[8];        // "ON" / "OFF"
-    char apto[10];         // apartamento
-    char topic[64];        // topic MQTT
-    char ultimoParam[16];  // portal/apto
-};
-
-LogEntry logBufferRAM[MAX_RAM_LOG]; // Buffer circular de logs
-int logIndexRAM = 0;
-int logCounterRAM = 0;
-
-// Función para grabar log en RAM
-void grabarLogRAM(const char* accion, const char* apto, const char* topic, const char* fechaAlta, const char* ultimoParam) {
-    LogEntry entry;
-    strncpy(entry.fechaHora, fechaAlta, sizeof(entry.fechaHora)-1); entry.fechaHora[sizeof(entry.fechaHora)-1]=0;
-    strncpy(entry.accion, accion, sizeof(entry.accion)-1); entry.accion[sizeof(entry.accion)-1]=0;
-    strncpy(entry.apto, apto, sizeof(entry.apto)-1); entry.apto[sizeof(entry.apto)-1]=0;
-    strncpy(entry.topic, topic, sizeof(entry.topic)-1); entry.topic[sizeof(entry.topic)-1]=0;
-    strncpy(entry.ultimoParam, ultimoParam, sizeof(entry.ultimoParam)-1); entry.ultimoParam[sizeof(entry.ultimoParam)-1]=0;
-
-    logBufferRAM[logIndexRAM] = entry;
-    logIndexRAM = (logIndexRAM + 1) % MAX_RAM_LOG;
-    if(logCounterRAM < MAX_RAM_LOG) logCounterRAM++;
-
-    Serial.println(entry.fechaHora); // Log de prueba en consola
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:linear-gradient(to bottom,#d6d6d6,#bfbfbf);
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  margin:0;
+  padding-top:20px;
+}
+.cuadro{
+  background:white;
+  padding:3rem;
+  border-radius:15px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.35);
+  text-align:center;
+  width:98%;
+  max-width:750px;
+}
+h2{ font-size:4.5rem; margin-bottom:1rem; }
+.fecha-hora{
+  display:flex;
+  font-size:2.5rem;
+  margin-bottom:1rem;
+  justify-content:center;
+  gap:1rem;
 }
 
-// Función para imprimir últimos logs en RAM
-void imprimirUltimosLogsRAM() {
-    Serial.println("=== ULTIMOS LOGS EN RAM ===");
-    for(int i = 0; i < logCounterRAM; i++) {
-        int idx = (logIndexRAM - logCounterRAM + i + MAX_RAM_LOG) % MAX_RAM_LOG;
-        LogEntry &e = logBufferRAM[idx];
-        Serial.println(e.fechaHora);
+.fecha-hora-combinada {
+  display: flex;
+  flex-direction: column; /* columnas en móvil */
+  font-size: 2rem;        /* más compacto en pantalla pequeña */
+  gap: 0.5rem;
+}
+
+.inicioLinea, .finLinea {
+  display: flex;
+  flex-wrap: wrap;       /* si la pantalla es muy pequeña se puede ajustar */
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (min-width: 480px) {
+  .fecha-hora-combinada {
+    flex-direction: row; /* en pantallas más grandes, inicio y fin en fila */
+    justify-content: center;
+  }
+}
+
+.panel{
+  border-radius:15px;
+  padding:1rem;
+  margin-bottom:2rem;
+  box-shadow:0 8px 18px rgba(0,0,0,0.25);
+}
+.titulo-panel{
+  font-size:2.5rem;
+  font-weight:bold;
+  padding:0.5rem 0;
+  margin-bottom:1rem;
+  border-bottom:2px solid #aaa;
+  background: rgba(255,255,255,0.4);
+  border-radius:8px;
+}
+.panel.portal{ background:#e3f5ea; border:3px solid #145c2c; }
+.panel.apto{ background:#e8edff; border:3px solid #1a3f9e; }
+.panel.luces{ background:#fff3e6; border:3px solid #b36000; }
+.estadoPuerta{
+  font-weight:bold;
+  font-size:1.8rem;
+  margin-bottom:1rem;
+}
+.botones{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:1rem;
+  margin-top:1rem;
+}
+button{
+  width:180px;
+  padding:1rem 0.5rem;
+  font-size:1.6rem;
+  border-radius:15px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  color:white;
+  transition:0.3s;
+  white-space:pre-line;
+}
+.verde{ background:linear-gradient(to bottom,#1f7a3a,#0f4f23); }
+.amarillo{ background:#f2c200 !important; color:black; }
+.gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
+</style>
+</head>
+
+<body>
+
+<div class="cuadro">
+
+<button id="tituloPrincipal" style="font-size:4.5rem;width:100%;background:linear-gradient(to bottom,#1f7a3a,#0f4f23);color:white;border:none;border-radius:15px;padding:1rem;">
+Apertura de Puertas
+</button>
+
+<div class="fecha-hora">
+Apartamento: <span id="apartamento"></span>
+<span id="estadoApartamento" style="font-weight:bold;"></span>
+</div>
+
+<div class="fecha-hora fecha-hora-combinada">
+  <div class="inicioLinea">
+    <span>Inicio:</span>
+    <span id="fechaInicio"></span>
+    <span id="horaInicio"></span>
+  </div>
+  <div class="finLinea">
+    <span>Fin:</span>
+    <span id="fechaFin"></span>
+    <span id="horaFin"></span>
+  </div>
+</div>
+
+<div class="panel portal">
+<div class="titulo-panel">Puerta Portal</div>
+<div class="estadoPuerta" id="estadoPortal"></div>
+<div class="botones">
+<button id="abrir" class="verde">Abrir Puerta Portal</button>
+</div>
+</div>
+
+<div class="panel apto">
+<div class="titulo-panel">Puerta Apartamento</div>
+<div class="estadoPuerta" id="estadoApto"></div>
+<div class="botones">
+<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+</div>
+</div>
+
+<div class="panel luces" id="panelLuces" style="display:none;">
+<div class="titulo-panel">Luces</div>
+<div class="botones" id="botonesLuces"></div>
+</div>
+
+</div>
+
+<!-- POPUP CONFIGURACIÓN -->
+<div id="popupConfig" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
+  <span id="cerrarPopup" style="
+  position:absolute;
+  top:1rem;
+  right:1rem;
+  cursor:pointer;
+  font-size:1.4rem;
+  background:#b30000;
+  color:white;
+  padding:0.4rem 1rem;
+  border-radius:10px;
+  font-weight:bold;
+">
+Cerrar
+</span>
+    <h2 style="font-size:1.8rem;">Selección de Tiempo</h2>
+    <div id="configBotones" style="margin-top:1rem;"></div>
+  </div>
+</div>
+
+<!-- POPUP LOG PUERTA -->
+<div id="popupLog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+     background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
+  <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
+   <span id="cerrarPopupLog" style="
+  position:absolute;
+  top:1rem;
+  right:1rem;
+  cursor:pointer;
+  font-size:1.4rem;
+  background:#b30000;
+  color:white;
+  padding:0.4rem 1rem;
+  border-radius:10px;
+  font-weight:bold;
+">
+Cerrar
+
+</span>
+  <h2 style="font-size:1.8rem;" id="tituloLog">Log Puerta</h2>
+  <div id="contenidoLog" style="margin-top:1rem; font-size:1.4rem;">Cargando log...</div>
+  </div>
+</div>
+
+<script>
+
+// -------- DECODIFICAR PARÁMETRO d --------
+function base64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length % 4) str += '=';
+  return atob(str);
+}
+
+const params = new URLSearchParams(window.location.search);
+let d = params.get('d') || '';
+let decoded = {};
+
+try{
+  const d_url = decodeURIComponent(d);
+  const base = base64urlDecode(d_url);
+  const paramStr = decodeURIComponent(base);
+  paramStr.split('&').forEach(p=>{
+    const [key,val] = p.split('=');
+    decoded[key] = val || '';
+  });
+  console.log("PARAMS DECODIFICADOS:",decoded);
+}catch(e){
+  console.error("❌ Error decodificando link:",e);
+}
+
+// -------- EXTRAER PARÁMETROS --------
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const ia  = decoded['ia'] || 0;
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+let m3    = decoded['m3'] || '';
+
+// -------- RECONSTRUIR MQTT --------
+if(m3){
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+}
+
+// -------- CONEXIÓN MQTT --------
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
+client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
+client.on('error', err=>console.log("❌ Error MQTT:",err));
+
+function enviarMQTT(topic, accion) { 
+  if (!ct || ct.trim() === '') {
+    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
+    return;
+  }
+  const ahora = new Date();
+  const fechaHoraEnvio = ahora.toISOString();
+  if (!topic.startsWith(ct)) {
+    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
+    topic = `${ct}${separador}${topic}`;
+  }
+  let duracion_rele = 0;
+
+  if (topic.includes('/portal')) {
+    duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+
+  } else if (topic.includes('/apto')) {
+    duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+
+  } else if (topic.includes('/luz')) {
+    const num = topic.match(/luz(\d+)/)[1];
+    const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
+
+    if(minutos === 999999){
+      duracion_rele = 999999; // 🔥 continuo no se convierte
+    } else {
+      duracion_rele = minutos * 60; // minutos → segundos
     }
-}
-
-// *********************************************************************************************************************
-// ================= WIFI SEGURO =================
-// *********************************************************************************************************************  
-#include <WiFiClientSecureBearSSL.h> 
-WiFiClientSecure espClient;
-PubSubClient client(espClient);
-
-// =====================================================================================================================
-// ====== CERTIFICADO CA DEL BROKER HIVEMQ
-// =====================================================================================================================
-const char* ca_cert = R"EOF(
------BEGIN CERTIFICATE-----
-MIIFBjCCAu6gAwIBAgIRAMISMktwqbSRcdxA9+KFJjwwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw
-WhcNMjcwMzEyMjM1OTU5WjAzMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
-RW5jcnlwdDEMMAoGA1UEAxMDUjEyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEA2pgodK2+lP474B7i5Ut1qywSf+2nAzJ+Npfs6DGPpRONC5kuHs0BUT1M
-5ShuCVUxqqUiXXL0LQfCTUA83wEjuXg39RplMjTmhnGdBO+ECFu9AhqZ66YBAJpz
-kG2Pogeg0JfT2kVhgTU9FPnEwF9q3AuWGrCf4yrqvSrWmMebcas7dA8827JgvlpL
-Thjp2ypzXIlhZZ7+7Tymy05v5J75AEaz/xlNKmOzjmbGGIVwx1Blbzt05UiDDwhY
-XS0jnV6j/ujbAKHS9OMZTfLuevYnnuXNnC2i8n+cF63vEzc50bTILEHWhsDp7CH4
-WRt/uTp8n1wBnWIEwii9Cq08yhDsGwIDAQABo4H4MIH1MA4GA1UdDwEB/wQEAwIB
-hjAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwEgYDVR0TAQH/BAgwBgEB
-/wIBADAdBgNVHQ4EFgUALUp8i2ObzHom0yteD763OkM0dIwHwYDVR0jBBgwFoAU
-ebRZ5nu25eQBc4AIiMgaWPbpm24wMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzAC
-hhZodHRwOi8veDEuaS5sZW5jci5vcmcv
------END CERTIFICATE-----
-)EOF";
-
-// *********************************************************************************************************************
-// ================= ANTI-REPLAY =================
-// *********************************************************************************************************************  
-#define MAX_SLOTS 10
-struct AntiReplaySlot { char key[64]; unsigned long envioMs; };
-AntiReplaySlot antiReplayBuffer[MAX_SLOTS];
-
-// *********************************************************************************************************************
-// ================= WIFI Y NTP =================
-// *********************************************************************************************************************  
-
-void setup_wifi(){ 
-    WiFi.begin(ssid,passwordWifi); 
-    while(WiFi.status()!=WL_CONNECTED) delay(500); 
-}
-void setup_time(){ 
-    configTime(0,0,"pool.ntp.org","time.nist.gov"); 
-    while(!time(nullptr)) delay(500); 
-}
-
-// *********************************************************************************************************************
-// ================= FECHA =================
-// *********************************************************************************************************************  
-String obtenerFechaHoraConMillis(){
-  time_t now=time(nullptr);
-  struct tm * tinfo=localtime(&now);
-  char fh[20]; strftime(fh,sizeof(fh),"%Y%m%d %H%M%S",tinfo);
-  unsigned long ms=millis()%1000;
-  char buffer[30]; sprintf(buffer,"%s.%03lu",fh,ms);
-  return String(buffer);
-}
-
-time_t convertirFechaHora(String f,String h){
-  struct tm t = {0};
-  t.tm_isdst = -1;
-  t.tm_year=f.substring(0,4).toInt()-1900; 
-  t.tm_mon=f.substring(4,6).toInt()-1; 
-  t.tm_mday=f.substring(6,8).toInt();
-  t.tm_hour=h.substring(0,2).toInt(); 
-  t.tm_min=h.substring(2,4).toInt(); 
-  t.tm_sec=h.substring(4,6).toInt();
-  return mktime(&t);
-}
-
-// *********************************************************************************************************************
-// ================= SHA256 =================
-// *********************************************************************************************************************  
-String generarSHA256(String input){
-  SHA256 sha;
-  sha.update((const uint8_t*)input.c_str(), input.length());
-  uint8_t* hash = sha.result();
-  String hashStr="";
-  for(int i=0;i<32;i++){
-    if(hash[i]<16) hashStr+="0";
-    hashStr+=String(hash[i],HEX);
   }
-  return hashStr;
+
+
+
+  const mensaje = {
+    id: ahora.getTime(),
+    fechaHoraEnvio,
+    accion,
+    clave: k,
+    ct: ct, 
+    apartamento: a,
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs,
+    cp_portal: +cp,
+    ca_apto: +ca,
+    l_luz: l,
+    duracion_rele 
+  };
+  console.log(`➡️ MQTT: ${topic}`, mensaje);
+  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
+    if (err) console.log("❌ Error al publicar:", err);
+  });
 }
 
-// *********************************************************************************************************************
-// ================= BASE64URL =================
-// *********************************************************************************************************************  
-String base64urlEncode(String hex){
-  int len=hex.length()/2;
-  uint8_t bytes[len];
-  for(int i=0;i<len;i++){
-    bytes[i] = (uint8_t)strtoul(hex.substring(i*2,i*2+2).c_str(),nullptr,16);
-  }
-  String encoded=base64::encode(bytes,len);
-  encoded.replace("+","-");
-  encoded.replace("/","_");
-  encoded.replace("=","");
-  return encoded;
+// -------- ELEMENTOS --------
+const btnAbrir = document.getElementById('abrir');
+const btnAbrirApto = document.getElementById('abrirApto');
+const estadoPortal = document.getElementById('estadoPortal');
+const estadoApto = document.getElementById('estadoApto');
+const estadoApartamento = document.getElementById('estadoApartamento');
+const panelLuces = document.getElementById('panelLuces');
+const botonesLuces = document.getElementById('botonesLuces');
+let botonesLuz = [];
+
+function formatearFechaHora(f,h){
+  return {fecha: f?`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}`:'-', hora:h?`${h.slice(0,2)}:${h.slice(2,4)}`:'-'};
 }
+const inicio = formatearFechaHora(fe,he);
+const fin = formatearFechaHora(fs,hs);
+document.getElementById('apartamento').textContent = a;
+document.getElementById('fechaInicio').textContent = inicio.fecha;
+document.getElementById('horaInicio').textContent = inicio.hora;
+document.getElementById('fechaFin').textContent = fin.fecha;
+document.getElementById('horaFin').textContent = fin.hora;
 
 
-// *********************************************************************************************************************
-// ================= GENERAR K =================
-// *********************************************************************************************************************
-String generarK(String identificadorApto, String fechaAlta, String fi, String hi, String ff, String hf, 
-                String numeroApto, bool puertaportalActivo, bool puertaaptoActivo, String luces, String ct) {
-  
-  String strParaHash = CLAVE_SECRETA;
-  strParaHash += identificadorApto;
-  strParaHash += mqtt_user;    // M1
-  strParaHash += mqtt_pass;    // M2
-  strParaHash += mqtt_server;  // M3
-  strParaHash += ct;
-  
-  // FechaAlta solo números
-  String fechaAltaNums = "";
-  for (int i = 0; i < fechaAlta.length(); i++) {
-    if (isDigit(fechaAlta[i])) fechaAltaNums += fechaAlta[i];
-  }
-  strParaHash += fechaAltaNums;
+// -------- BOTONES LUCES --------
+if(l>0){
+  panelLuces.style.display='block';
 
-  strParaHash += fi + hi + ff + hf;
-  strParaHash += numeroApto;
-  strParaHash += (puertaportalActivo ? "1" : "0");
-  strParaHash += (puertaaptoActivo ? "1" : "0");
-  strParaHash += luces;
+  for(let i=1;i<=l;i++){
+    const btn = document.createElement('button');
+    btn.dataset.index = i;
+    btn.classList.add('verde');
+    btn.textContent = `Encender\nLuz ${i}`;
+    botonesLuces.appendChild(btn);
+    botonesLuz.push(btn);
 
-  String hashHex = generarSHA256(strParaHash); // SHA256
-  return hashHex;
-}
+    // 👇 LISTENER AQUÍ (MEJOR)
+ btn.addEventListener('click', ()=>{
+  if(btn.disabled) return;
 
+  const valor = parseInt(localStorage.getItem('tiempo_' + btn.dataset.index)) || 60;
 
-// *********************************************************************************************************************
-// ================= VALIDACION ANTI-REPLAY =================
-// *********************************************************************************************************************  
-bool validarAntiReplayMs(const char* topic, const char* accion, unsigned long envioMs){
-    char key[64]; 
-    snprintf(key, sizeof(key), "%s|%s|%lu", topic, accion, envioMs);
-    for(int i=0;i<MAX_SLOTS;i++){
-        if(strcmp(antiReplayBuffer[i].key, key)==0){
-            if(envioMs <= antiReplayBuffer[i].envioMs) return false; // ✅ replay detectado
-            antiReplayBuffer[i].envioMs = envioMs;
-            return true;
+  if(btn.classList.contains('verde')){
+    // ENCENDER
+    btn.classList.replace('verde','amarillo');
+    btn.textContent = `Apagar\nLuz ${btn.dataset.index}`;
+    enviarMQTT(`/luz${btn.dataset.index}`, 'ON');
+
+    if(valor !== 999999){
+      setTimeout(()=>{
+        if(btn.classList.contains('amarillo')){
+          btn.classList.replace('amarillo','verde');
+          btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
         }
+      }, valor * 60 * 1000);
     }
-    // agregar nuevo slot
-    for(int i=0;i<MAX_SLOTS;i++){
-        if(antiReplayBuffer[i].key[0]==0){
-            strncpy(antiReplayBuffer[i].key, key, sizeof(antiReplayBuffer[i].key)-1);
-            antiReplayBuffer[i].key[sizeof(antiReplayBuffer[i].key)-1]=0;
-            antiReplayBuffer[i].envioMs = envioMs;
-            return true;
-        }
+
+  } else if(btn.classList.contains('amarillo')){
+    // APAGAR MANUAL
+    btn.classList.replace('amarillo','verde');
+    btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
+    enviarMQTT(`/luz${btn.dataset.index}`, 'OFF');
+  }
+});
+  }
+}
+
+
+
+
+
+
+// -------- SUSCRIPCIONES Y LISTENER GENERAL --------
+client.on('connect', ()=>{
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora>=fIni && ahora<=fFin;
+  if(!acceso) return;
+
+  // Suscribir luces
+  botonesLuz.forEach((btn,i)=>{
+    client.subscribe(`${ct}/luz${i+1}`, {qos:1});
+    enviarMQTT(`/luz${i+1}`,'get');
+  });
+
+  // Suscribir portal y apartamento
+  client.subscribe(`${ct}/portal`, {qos:1});
+  enviarMQTT('/portal','get');
+  client.subscribe(`${ct}/apto`, {qos:1});
+  enviarMQTT('/apto','get');
+});
+
+// -------- LISTENER GENERAL PARA TODOS LOS MENSAJES --------
+client.on('message', (topic, message)=>{
+  const msgStr = message.toString();
+
+  botonesLuz.forEach((btn,i)=>{
+    const subTopic = `${ct}/luz${i+1}`;
+    if(topic === subTopic){
+
+      // 🚫 SI ESTÁ EN AMARILLO, NO TOCAR (estado temporal)
+      if(btn.classList.contains('amarillo')) return;
+
+      if(msgStr === 'on'){
+        btn.classList.replace('verde','amarillo');
+        btn.textContent=`Apagar\nLuz ${i+1}`;
+      } else {
+        btn.classList.replace('amarillo','verde');
+        btn.textContent=`Encender\nLuz ${i+1}`;
+      }
     }
-    // sobrescribe primero si lleno
-    strncpy(antiReplayBuffer[0].key,key,sizeof(antiReplayBuffer[0].key)-1);
-    antiReplayBuffer[0].key[sizeof(antiReplayBuffer[0].key)-1]=0;
-    antiReplayBuffer[0].envioMs = envioMs;
-    return true;
+  });
+});
+
+
+
+
+// -------- VALIDACIÓN ACCESO --------
+function validarAcceso() {
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora >= fIni && ahora <= fFin;
+
+  // --- Portal y apartamento: solo fecha/hora ---
+  const portalActivo = acceso; // no depende de cp
+  const aptoActivo = acceso;   // no depende de ca
+
+  // Portal
+  btnAbrir.disabled = !portalActivo;
+  btnAbrir.classList.toggle('gris', !portalActivo);
+  btnAbrir.classList.toggle('verde', portalActivo);
+  document.querySelector('.panel.portal .titulo-panel').textContent =
+    portalActivo ? 'Puerta Portal - ACTIVO' : 'Puerta Portal - INACTIVO';
+
+  // Apartamento
+  btnAbrirApto.disabled = !aptoActivo;
+  btnAbrirApto.classList.toggle('gris', !aptoActivo);
+  btnAbrirApto.classList.toggle('verde', aptoActivo);
+  document.querySelector('.panel.apto .titulo-panel').textContent =
+    aptoActivo ? 'Puerta Apartamento - ACTIVO' : 'Puerta Apartamento - INACTIVO';
+
+  // --- Estado general ---
+  estadoPortal.textContent = portalActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoPortal.style.color = portalActivo ? '#0b7a2a' : '#b30000';
+  estadoApto.textContent = aptoActivo ? 'ACTIVO' : 'INACTIVO';
+  estadoApto.style.color = aptoActivo ? '#0b7a2a' : '#b30000';
+  estadoApartamento.textContent = acceso ? 'Activo' : 'Fuera de horario';
+  estadoApartamento.style.color = acceso ? '#0b7a2a' : '#b30000';
+
+  // --- Luces ---
+  botonesLuz.forEach((b,i)=>{
+    if (!acceso) { // gris solo si fuera de fechas/hora
+      b.disabled = true;
+      b.classList.remove('verde','amarillo');
+      b.classList.add('gris');
+      b.textContent = `Encender\nLuz ${i+1}`;
+    } else {
+      b.disabled = false;  // se puede pulsar según MQTT después
+      b.classList.remove('gris','amarillo');
+      b.classList.add('verde');
+      b.textContent = `Encender\nLuz ${i+1}`;
+    }
+  });
 }
 
-// *********************************************************************************************************************
-// ================= VALIDACION RANGO FECHA/HORA =================
-// *********************************************************************************************************************  
-bool validarRango(String fe,String he,String fs,String hs){
-  time_t ahora=time(nullptr); 
-  return (ahora>=convertirFechaHora(fe,he) && ahora<=convertirFechaHora(fs,hs));
-}
+// Ejecutar al cargar y cada minuto
+validarAcceso();
+setInterval(validarAcceso, 60000);
 
 
 
-// *********************************************************************************************************************
-// ================= VALIDACION CLAVE =================
-// *********************************************************************************************************************
-bool validarClave(String ct,                   // CT calculada en setup()
-                  String fechaAlta,            // JSON -> fechaAlta
-                  String fi, String hi,       // JSON -> fechaEntrada, horaEntrada
-                  String ff, String hf,       // JSON -> fechaFin, horaFin
-                  bool puertaportalActivo,    // JSON -> cp_portal != 0
-                  bool puertaaptoActivo,      // JSON -> ca_apto != 0
-                  String luces,               // JSON -> l_luz
-                  String claveJSON)           // JSON -> clave
-{
-    // Generar K usando datos del programa + JSON
-    String k_local = generarK(
-        IA_APTO,          // identificadorApto del programa
-        fechaAlta,        // del JSON
-        fi, hi, ff, hf,   // del JSON
-        NUM_APARTAMENTO,  // del programa
-        puertaportalActivo,
-        puertaaptoActivo,
-        luces,
-        ct                // ct_local del programa
-    );
+// -------- LISTENER CLICK PORTAL/APARTAMENTO --------
+btnAbrir.addEventListener('click', () => {
+  if(btnAbrir.disabled) return;
 
-    // Comparar K generado con K que viene en el JSON
-    return k_local == claveJSON;
-}
+  // Poner botón en amarillo durante el tiempo del popup
+  const duracion = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+  btnAbrir.classList.replace('verde','amarillo');
+  btnAbrir.textContent = `Abriendo\nPuerta Portal`;
+  setTimeout(()=>{
+    btnAbrir.classList.replace('amarillo','verde');
+    btnAbrir.textContent = `Abrir Puerta Portal`;
+  }, duracion*1000);
+
+  // Enviar solo ON al ESP
+  enviarMQTT('/portal', 'ON');
+});
+
+btnAbrirApto.addEventListener('click', () => {
+  if(btnAbrirApto.disabled) return;
+
+  const duracion = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+  btnAbrirApto.classList.replace('verde','amarillo');
+  btnAbrirApto.textContent = `Abriendo\nPuerta Apartamento`;
+  setTimeout(()=>{
+    btnAbrirApto.classList.replace('amarillo','verde');
+    btnAbrirApto.textContent = `Abrir Puerta Apartamento`;
+  }, duracion*1000);
+
+  enviarMQTT('/apto', 'ON');
+});
 
 
 
 
-// *********************************************************************************************************************
-// ================= MQTT CALLBACK =================
-// *********************************************************************************************************************  
-void callback(char* topic, byte* payload, unsigned int length) {
-     char msg[401]; // buffer fijo
-     if(length >= sizeof(msg)){
-       Serial.println("❌ Payload demasiado grande");
-       return;
-     }
 
-     memcpy(msg, payload, length);
-     msg[length] = '\0';
 
-     // ✅ VALIDACIÓN DE TOPIC EXACTO
-     char topicStr[64];
-     strncpy(topicStr, topic, sizeof(topicStr)-1);
-     topicStr[sizeof(topicStr)-1] = '\0';
-     if(strcmp(topicStr, topic_sub.c_str()) != 0){
-        Serial.println("❌ Topic incorrecto");
-        return;
-     }
 
-     // Parse JSON
-     DynamicJsonDocument doc(1024);
-     DeserializationError error = deserializeJson(doc, msg);
-     if(error){
-         Serial.print("❌ Error JSON: "); Serial.println(error.c_str());
-         return;
-     }
 
-     // Leer parámetros críticos
-     String accion = doc["accion"]; accion = accion.toLowerCase();  // ON / OFF
-     String apto   = doc["apartamento"];
-     if(apto != String(NUM_APARTAMENTO)){ // ✅ validar apartamento
-         Serial.println("❌ Apartamento incorrecto");
-         return;
-     }
 
-// ================= VALIDAR CT =================
-     String ct_in = doc["ct"];
-     if(ct_in != ct_local){
-        Serial.println("❌ CT INVALIDO");
-        return;
-     }
+// -------- POPUP CONFIGURACIÓN --------
+document.addEventListener('DOMContentLoaded', () => {
+  const tituloPrincipal = document.getElementById('tituloPrincipal');
+  const popupConfig = document.getElementById('popupConfig');
+  const configBotones = document.getElementById('configBotones');
+  const cerrarPopup = document.getElementById('cerrarPopup');
+  let pulsacionTimer;
 
-     String fechaAlta  = doc["fechaAlta"];
-     String fe         = doc["fechaEntrada"];
-     String he         = doc["horaEntrada"];
-     String fs         = doc["fechaFin"];
-     String hs         = doc["horaFin"];
-     String clave      = doc["clave"];
-     String cp_portal  = doc["cp_portal"];
-     String ca_apto    = doc["ca_apto"];
-     String l_luz      = doc["l_luz"];
-     String fechaEnvio = doc["fechaHoraEnvio"];
-     int duracion_rele = doc["duracion_rele"];
-     if(duracion_rele < 0) duracion_rele = 0;
-     if(duracion_rele != 999999 && duracion_rele > 86400) duracion_rele = 86400;
+  function iniciarPulsacion() { 
+    pulsacionTimer = setTimeout(mostrarPopupConfig, 1000); 
+  }
 
-     // Calcular tiempo en ms
-     int y=fechaEnvio.substring(0,4).toInt();
-     int m=fechaEnvio.substring(5,7).toInt();
-     int d=fechaEnvio.substring(8,10).toInt();
-     int H=fechaEnvio.substring(11,13).toInt();
-     int M=fechaEnvio.substring(14,16).toInt();
-     int S=fechaEnvio.substring(17,19).toInt();
-     int ms=fechaEnvio.substring(20,23).toInt();
+  function cancelarPulsacion() { 
+    clearTimeout(pulsacionTimer); 
+  }
+
+  if (tituloPrincipal) {
+    ['mousedown','touchstart'].forEach(e => tituloPrincipal.addEventListener(e, iniciarPulsacion));
+    ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => tituloPrincipal.addEventListener(e, cancelarPulsacion));
+  }
+
+  if(cerrarPopup && popupConfig) {
+    cerrarPopup.addEventListener('click', ()=> popupConfig.style.display='none');
+  }
+
+  function mostrarPopupConfig(){
+    if(!popupConfig || !configBotones) return;
+    popupConfig.style.display='block';
+    configBotones.innerHTML='';
+    const todosBotones = [
+      {id:'abrir', nombre:'Puerta Portal', tipo:'portal'},
+      {id:'abrirApto', nombre:'Puerta Apartamento', tipo:'apto'},
+      ...botonesLuz.map(b=>({id:b.dataset.index, nombre:`Luz ${b.dataset.index}`, tipo:'luz'}))
+    ];
+    const valoresPortalApto = [1,2,3,4];
    
-     struct tm t = {0};
-     t.tm_isdst = -1;
-     t.tm_year=y-1900; 
-     t.tm_mon=m-1; 
-     t.tm_mday=d; 
-     t.tm_hour=H; 
-     t.tm_min=M; 
-     t.tm_sec=S;
-  
-     unsigned long envioMs = mktime(&t)*1000UL + ms;
-     unsigned long ahoraMs = time(nullptr)*1000UL + (millis() % 1000);
-
-     long diff = (long)(ahoraMs - envioMs);
-     if(abs(diff) > 10000){ // ✅ mensaje demasiado antiguo
-        Serial.println("❌ Mensaje demasiado antiguo");
-        return;
-     }
-
-     // ✅ Validaciones
-     if(!validarAntiReplayMs(topicStr, accion.c_str(), envioMs)) return;
-     if(!validarRango(fe,he,fs,hs)) return;
-      
-     bool puertaportalActivo = (doc["cp_portal"].as<int>() != 0);
-     bool puertaaptoActivo   = (doc["ca_apto"].as<int>() != 0);
-     String luces             = doc["l_luz"].as<String>();
-
-     if(!validarClave(
-        ct_local,               // CT del programa
-        doc["fechaAlta"],       // JSON
-        doc["fechaEntrada"],    // fi
-        doc["horaEntrada"],     // hi
-        doc["fechaFin"],        // ff
-        doc["horaFin"],         // hf
-        puertaportalActivo,     // JSON
-        puertaaptoActivo,       // JSON
-        luces,                  // JSON
-        doc["clave"]            // K del JSON
-     )) {
-        Serial.println("❌ Clave K invalida");
-        return;
-        }
+    const valoresLuces = [
+          1,5,15,30,45,
+          60,120,180,240,300,360,420,480,540,600, // hasta 10h
+          660,720,780,840,900,960,1020,1080,1140,1200, // 11h a 20h
+          1260,1320,1380,1440, // 21h a 24h
+         'Continuo'
+    ];
 
 
-     // Obtener último parámetro del topic
-     char* ultimoParam = strrchr(topicStr, '/');
-     if(ultimoParam) ultimoParam++; else ultimoParam = topicStr;
 
-     // ================= ACCION ON =================
-     if(accion=="on"){
-         int duracionFinal = duracion_rele;
-         if(strcmp(ultimoParam,"portal")==0 || strcmp(ultimoParam,"apto")==0){
-             if(duracionFinal>5) duracionFinal=5; // Máximo 5s para puertas
-         }
-         digitalWrite(PIN_LUZ,HIGH);
-         grabarLogRAM(accion.c_str(), apto.c_str(), topicStr, fechaAlta.c_str(), ultimoParam); // ✅ LOG ON
-         if(duracionFinal!=999999){
-             releApagarEn = millis() + duracionFinal*1000UL;
-         } else {
-             releApagarEn = 0;
-         }
-     }
-     // ================= ACCION OFF =================
-     else if(accion=="off"){
-         digitalWrite(PIN_LUZ,LOW);
-         grabarLogRAM(accion.c_str(), apto.c_str(), topicStr, fechaAlta.c_str(), ultimoParam); // ✅ LOG OFF
-         releApagarEn = 0;
-     }
-}
 
-// *********************************************************************************************************************
-// ================= RECONNECT =================
-// *********************************************************************************************************************  
-void reconnect(){
-  while(!client.connected()){
-    String clientId="ESP_"+String(NUM_APARTAMENTO)+"_"+String(TIPO_RELE);
-    if(client.connect(clientId.c_str(),mqtt_user,mqtt_pass))
-        client.subscribe(topic_sub.c_str());
-    else
-        delay(5000);
+
+
+    todosBotones.forEach(boton=>{
+      const div = document.createElement('div');
+      div.style.display='flex';
+      div.style.alignItems='center';
+      const label = document.createElement('span');
+      label.textContent = boton.nombre;
+      label.style.width='200px';
+      const select = document.createElement('select');
+      select.dataset.botonId = boton.id;
+      select.style.fontSize = '1.6rem';
+      select.style.padding = '0.4rem';
+      select.style.height = '45px';
+      select.style.width = '180px';
+      const opciones = (boton.tipo==='portal'||boton.tipo==='apto') ? valoresPortalApto : valoresLuces;
+      opciones.forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = (v==='Continuo') ? 999999 : v;
+        if(boton.tipo==='portal'||boton.tipo==='apto') opt.textContent = v+' segundos';
+        else if(v==='Continuo') opt.textContent='Continuo';
+        else if(v<60) opt.textContent=v+' minutos';
+        else opt.textContent = `${v/60} Horas`;
+        select.appendChild(opt);
+      });
+      const valorGuardado = localStorage.getItem('tiempo_'+boton.id);
+      if(valorGuardado) select.value = valorGuardado;
+      select.addEventListener('change', ()=>localStorage.setItem('tiempo_'+boton.id, select.value));
+      div.appendChild(label);
+      div.appendChild(select);
+      configBotones.appendChild(div);
+    });
   }
+
+  window.mostrarPopupConfig = mostrarPopupConfig;
+
+});
+</script>
+
+
+<script>
+//--***********************************************
+//-- -------- POPUP LOG GENERAL DE PUERTAS --------
+//--***********************************************
+// Variables globales para el popup log
+const popupLog = document.getElementById('popupLog');
+const tituloLog = document.getElementById('tituloLog');
+const contenidoLog = document.getElementById('contenidoLog');
+const logTopic = `${ct}/puertas/log`;
+const cerrarPopupLog = document.getElementById('cerrarPopupLog');
+
+if(cerrarPopupLog && popupLog){
+  cerrarPopupLog.addEventListener('click', ()=>{
+    popupLog.style.display = 'none';
+  });
 }
 
-// *********************************************************************************************************************
-// ================= FUNCION CHECKRELE =================
-// *********************************************************************************************************************  
-void checkRele(){
-  // Apaga automáticamente el relé si ha llegado el tiempo
-  if(digitalRead(PIN_LUZ) == HIGH && releApagarEn != 0 && millis() >= releApagarEn){
-      digitalWrite(PIN_LUZ, LOW);
-      releApagarEn = 0; // ✅ NO LOG, solo apaga
+// Suscripción única al topic de log
+client.subscribe(logTopic, { qos: 1 });
+
+// Listener único para todos los mensajes MQTT
+client.on('message', (topic, msg) => {
+  const msgStr = msg.toString();
+
+  // Filtrar solo log de puertas y solo si popup visible
+  if (topic === logTopic && popupLog.style.display === 'flex') {
+    try {
+      let logData = JSON.parse(msgStr);
+      if (!Array.isArray(logData)) logData = [logData];
+
+      let html = '';
+      logData.forEach(entry => {
+        html += `<div>
+            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
+            <strong>Acción:</strong> ${entry.accion || '-'}<br>
+            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
+            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
+            <hr>
+        </div>`;
+      });
+
+      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
+    } catch (e) {
+      contenidoLog.textContent = 'Error al leer log.';
+      console.error(e);
+    }
   }
+});
+
+// Función para mostrar popup log
+function mostrarPopupLogGeneral() {
+  if(!popupLog || !tituloLog || !contenidoLog) return;
+
+  tituloLog.textContent = 'Apertura de Puertas';
+  contenidoLog.textContent = 'Cargando log...';
+  popupLog.style.display = 'flex';
+
+  // Enviar petición MQTT para obtener log
+  const ahora = new Date();
+  const mensaje = {
+    id: ahora.getTime(),
+    fechaHoraEnvio: ahora.toISOString(),
+    accion: 'getLog',
+    clave: k,
+    ct: ct,
+    apartamento: a,
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs,
+    cp_portal: +cp,
+    ca_apto: +ca,
+    l_luz: l,
+    duracion_portal: parseInt(localStorage.getItem('tiempo_abrir')) || 3,
+    duracion_apto: parseInt(localStorage.getItem('tiempo_abrirApto')) || 3,
+    pw: decoded['pw'] || ''
+  };
+
+  client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
+    if(err) console.error('Error al pedir log:', err);
+  });
 }
+</script>
 
-// *********************************************************************************************************************
-// ================= SETUP =================
-// *********************************************************************************************************************  
-void setup(){
-  Serial.begin(115200);
 
-   // Calcular topic cifrado
 
- // ===================== CALCULO CT_LOCAL =====================
-  // Igual que JS: SHA-256 en hexadecimal
-  SHA256 sha256;
-  String textoTopic = String(CLAVE_SECRETA) + String(NUM_APARTAMENTO) + String(IA_APTO);
 
-  sha256.reset();
-  sha256.update((const uint8_t*)textoTopic.c_str(), textoTopic.length());
-  uint8_t hash[32];
-  sha256.finalize(hash, sizeof(hash));
+<script>
+// ***********************************************************
+// -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
+// ***********************************************************
+const titulos = document.querySelectorAll('.panel .titulo-panel');
 
-  // Convertir a hexadecimal como en JS
-  char hashHex[65];
-  for(int i=0;i<32;i++) sprintf(hashHex + i*2, "%02x", hash[i]);
-  hashHex[64] = 0;
-  ct_local = String(hashHex);
+titulos.forEach(titulo => {
+  let timer;
+  let pulsado = false;
 
-  Serial.print("CT_LOCAL calculado: ");
-  Serial.println(ct_local);
+  const startPress = () => {
+    pulsado = false;
+    timer = setTimeout(() => {
+      pulsado = true;
+      mostrarPopupLogGeneral();
+    }, 2000);
+  };
 
-  // ===================== FIN CALCULO CT_LOCAL =====================
+  const endPress = () => clearTimeout(timer);
 
-  // Topic MQTT usando ct_local
-  topic_sub = ct_local + "/" + String(TIPO_RELE);
+  ['mousedown','touchstart'].forEach(e => titulo.addEventListener(e, startPress));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e => titulo.addEventListener(e, endPress));
+});
 
-  pinMode(PIN_LUZ,OUTPUT);
-  digitalWrite(PIN_LUZ,LOW);
+</script>
 
-  setup_wifi();
-  setup_time();
 
-  espClient.setCACert(ca_cert);
-  client.setServer(mqtt_server,mqtt_port);
-  client.setCallback(callback);
-}
-
-// *********************************************************************************************************************
-// ================= LOOP =================
-// *********************************************************************************************************************  
-void loop(){
-  if(!client.connected()) reconnect();
-  client.loop();
-
-  checkRele(); // <--- Función de apagado automático
-}
+</body>
+</html>
