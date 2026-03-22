@@ -126,32 +126,28 @@ Apartamento: <span id="apartamento"></span>
   </div>
 </div>
 
-
-<!-- Panel Portal -->
 <div class="panel portal">
-  <button class="titulo-panel" id="tituloPortal">Puerta Portal</button>
-  <div class="estadoPuerta" id="estadoPortal"></div>
-  <div class="botones">
-    <button id="abrir" class="verde">Abrir Puerta Portal</button>
-  </div>
-</div> <!-- Cierre correcto del panel portal -->
+<div class="titulo-panel">Puerta Portal</div>
+<div class="estadoPuerta" id="estadoPortal"></div>
+<div class="botones">
+<button id="abrir" class="verde">Abrir Puerta Portal</button>
+</div>
+</div>
 
-<!-- Panel Apartamento -->
 <div class="panel apto">
-  <button class="titulo-panel" id="tituloApto">Puerta Apartamento</button>
-  <div class="estadoPuerta" id="estadoApto"></div>
-  <div class="botones">
-    <button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
-  </div>
-</div> <!-- Cierre correcto del panel apto -->
+<div class="titulo-panel">Puerta Apartamento</div>
+<div class="estadoPuerta" id="estadoApto"></div>
+<div class="botones">
+<button id="abrirApto" class="verde">Abrir Puerta Apartamento</button>
+</div>
+</div>
 
-<!-- Panel Luces -->
 <div class="panel luces" id="panelLuces" style="display:none;">
-  <div class="titulo-panel">Luces</div>
-  <div class="botones" id="botonesLuces"></div>
-</div> <!-- Cierre correcto del panel luces -->
+<div class="titulo-panel">Luces</div>
+<div class="botones" id="botonesLuces"></div>
+</div>
 
-
+</div>
 
 <!-- POPUP CONFIGURACIÓN -->
 <div id="popupConfig" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
@@ -430,13 +426,9 @@ function validarAcceso() {
   const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
   const acceso = ahora >= fIni && ahora <= fFin;
 
-// Portal depende de acceso y cp
-const portalActivo = acceso && cp;
-
-// Apartamento depende de acceso y ca
-const aptoActivo = acceso && ca;
-
-
+  // --- Portal y apartamento: solo fecha/hora ---
+  const portalActivo = acceso; // no depende de cp
+  const aptoActivo = acceso;   // no depende de ca
 
   // Portal
   btnAbrir.disabled = !portalActivo;
@@ -608,70 +600,56 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
-
 <script>
 //--***********************************************
 //-- -------- POPUP LOG GENERAL DE PUERTAS --------
 //--***********************************************
-
+// Variables globales para el popup log
 const popupLog = document.getElementById('popupLog');
 const tituloLog = document.getElementById('tituloLog');
 const contenidoLog = document.getElementById('contenidoLog');
 const logTopic = `${ct}/puertas/log`;
 const cerrarPopupLog = document.getElementById('cerrarPopupLog');
 
-// Array para guardar logs recibidos
-let logsRecibidos = [];
-
-// Cerrar popup
 if(cerrarPopupLog && popupLog){
   cerrarPopupLog.addEventListener('click', ()=>{
     popupLog.style.display = 'none';
   });
 }
 
-// Suscripción al topic de log
+// Suscripción única al topic de log
 client.subscribe(logTopic, { qos: 1 });
 
-// Función para mostrar logs en el popup
-function mostrarLogsEnPopup(logData){
-  let html = '';
-  logData.forEach(entry=>{
-    html += `<div>
-      <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
-      <strong>Acción:</strong> ${entry.accion || '-'}<br>
-      <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
-      <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
-      <hr>
-    </div>`;
-  });
-  contenidoLog.innerHTML = html || 'No hay entradas en el log.';
-}
-
-// Listener para todos los mensajes MQTT
+// Listener único para todos los mensajes MQTT
 client.on('message', (topic, msg) => {
-  if(topic === logTopic){
-    try{
-      let logData = JSON.parse(msg.toString());
-      if(!Array.isArray(logData)) logData = [logData];
+  const msgStr = msg.toString();
 
-      logsRecibidos = logData; // guardar últimos logs
+  // Filtrar solo log de puertas y solo si popup visible
+  if (topic === logTopic && popupLog.style.display === 'flex') {
+    try {
+      let logData = JSON.parse(msgStr);
+      if (!Array.isArray(logData)) logData = [logData];
 
-      // Mostrar solo si popup abierto
-      if(popupLog.style.display === 'flex'){
-        mostrarLogsEnPopup(logsRecibidos);
-      }
+      let html = '';
+      logData.forEach(entry => {
+        html += `<div>
+            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
+            <strong>Acción:</strong> ${entry.accion || '-'}<br>
+            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
+            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
+            <hr>
+        </div>`;
+      });
 
-    } catch(e){
-      console.error("Error al procesar log MQTT:", e);
-      if(popupLog.style.display === 'flex'){
-        contenidoLog.textContent = 'Error al leer log.';
-      }
+      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
+    } catch (e) {
+      contenidoLog.textContent = 'Error al leer log.';
+      console.error(e);
     }
   }
 });
 
-// Función para mostrar popup y actualizar logs
+// Función para mostrar popup log
 function mostrarPopupLogGeneral() {
   if(!popupLog || !tituloLog || !contenidoLog) return;
 
@@ -679,12 +657,7 @@ function mostrarPopupLogGeneral() {
   contenidoLog.textContent = 'Cargando log...';
   popupLog.style.display = 'flex';
 
-  // Mostrar logs que ya llegaron
-  if(logsRecibidos.length > 0){
-    mostrarLogsEnPopup(logsRecibidos);
-  }
-
-  // Enviar petición MQTT para obtener log actualizado
+  // Enviar petición MQTT para obtener log
   const ahora = new Date();
   const mensaje = {
     id: ahora.getTime(),
@@ -706,7 +679,6 @@ function mostrarPopupLogGeneral() {
     pw: decoded['pw'] || ''
   };
 
-  console.log("➡️ MQTT LOG REQUEST:", mensaje);
   client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if(err) console.error('Error al pedir log:', err);
   });
@@ -716,11 +688,7 @@ function mostrarPopupLogGeneral() {
 
 
 
-
 <script>
-
-
-
 // ***********************************************************
 // -------- PULSACIÓN LARGA GENERAL PARA LOS TITULOS --------
 // ***********************************************************
@@ -745,36 +713,6 @@ titulos.forEach(titulo => {
 });
 
 </script>
-// -------- PULSACIÓN LARGA EN BOTONES DE PUERTAS --------
-const botonesTitulos = [
-  document.getElementById('tituloPortal'),
-  document.getElementById('tituloApto')
-];
-
-botonesTitulos.forEach(boton => {
-  if(!boton) return; // Por si no existe
-
-  let timer; // Timer para 2 segundos
-
-  // Comienza la pulsación
-  const startPress = () => {
-    timer = setTimeout(() => {
-      mostrarPopupLogGeneral(); // Solo si se mantiene 2s
-    }, 2000); // 2000 ms = 2 segundos
-  };
-
-  // Termina la pulsación
-  const endPress = () => {
-    clearTimeout(timer); // Cancela si se suelta antes
-  };
-
-  // Detectar inicio de pulsación
-  ['mousedown', 'touchstart'].forEach(e => boton.addEventListener(e, startPress));
-
-  // Detectar final de pulsación
-  ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(e => boton.addEventListener(e, endPress));
-});
-
 
 
 </body>
