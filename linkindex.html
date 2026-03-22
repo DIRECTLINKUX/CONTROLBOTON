@@ -162,9 +162,11 @@ Apartamento: <span id="apartamento"></span>
 <div id="popupLog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
      background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:9999;">
   <div style="background:white; border-radius:15px; padding:2rem; max-width:600px; width:50%; position:relative;">
-    <span id="cerrarPopupLog" style="position:absolute; top:1rem; right:1rem; cursor:pointer; font-size:2rem;">✖</span>
-    <h2 style="font-size:1.8rem;" id="tituloLog">Log Puerta</h2>
-    <div id="contenidoLog" style="margin-top:1rem; font-size:1.4rem;">Cargando log...</div>
+    <span id="cerrarPopupLog" style="position:absolute; top:1rem; right:1rem; cursor:pointer; font-size:1.5rem;background:#ccc; padding:0.3rem 0.8rem; border-radius:8px;">
+    Cerrar
+</span>
+  <h2 style="font-size:1.8rem;" id="tituloLog">Log Puerta</h2>
+  <div id="contenidoLog" style="margin-top:1rem; font-size:1.4rem;">Cargando log...</div>
   </div>
 </div>
 
@@ -243,7 +245,12 @@ function enviarMQTT(topic, accion) {
   } else if (topic.includes('/luz')) {
     const num = topic.match(/luz(\d+)/)[1];
     const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
-    duracion_rele = minutos * 60; // ✅ MINUTOS → SEGUNDOS
+
+    if(minutos === 999999){
+      duracion_rele = 999999; // 🔥 continuo no se convierte
+    } else {
+      duracion_rele = minutos * 60; // minutos → segundos
+    }
   }
 
 
@@ -577,6 +584,13 @@ const popupLog = document.getElementById('popupLog');
 const tituloLog = document.getElementById('tituloLog');
 const contenidoLog = document.getElementById('contenidoLog');
 const logTopic = `${ct}/puertas/log`;
+const cerrarPopupLog = document.getElementById('cerrarPopupLog');
+
+if(cerrarPopupLog && popupLog){
+  cerrarPopupLog.addEventListener('click', ()=>{
+    popupLog.style.display = 'none';
+  });
+}
 
 // Suscripción única al topic de log
 client.subscribe(logTopic, { qos: 1 });
@@ -664,7 +678,7 @@ titulos.forEach(titulo => {
     timer = setTimeout(() => {
       pulsado = true;
       mostrarPopupLogGeneral();
-    }, 5000);
+    }, 2000);
   };
 
   const endPress = () => clearTimeout(timer);
