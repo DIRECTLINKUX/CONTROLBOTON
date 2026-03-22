@@ -283,30 +283,52 @@ document.getElementById('horaInicio').textContent = inicio.hora;
 document.getElementById('fechaFin').textContent = fin.fecha;
 document.getElementById('horaFin').textContent = fin.hora;
 
+
 // -------- BOTONES LUCES --------
 if(l>0){
   panelLuces.style.display='block';
+
   for(let i=1;i<=l;i++){
     const btn = document.createElement('button');
-    btn.dataset.index=i;
+    btn.dataset.index = i;
     btn.classList.add('verde');
-    btn.textContent=`Encender\nLuz ${i}`;
+    btn.textContent = `Encender\nLuz ${i}`;
     botonesLuces.appendChild(btn);
     botonesLuz.push(btn);
+
+    // 👇 LISTENER AQUÍ (MEJOR)
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
+
+      const duracion = parseInt(localStorage.getItem('tiempo_' + btn.dataset.index)) || 3600;
+
       if(btn.classList.contains('verde')){
+        // ENCENDER
         btn.classList.replace('verde','amarillo');
-        btn.textContent=`Apagar\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'ON');
-      }else{
+        btn.textContent = `Apagar\nLuz ${btn.dataset.index}`;
+        enviarMQTT(`/luz${btn.dataset.index}`, 'ON');
+
+        setTimeout(()=>{
+          if(btn.classList.contains('amarillo')){
+            btn.classList.replace('amarillo','verde');
+            btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
+          }
+        }, duracion*1000);
+
+      } else if(btn.classList.contains('amarillo')){
+        // APAGAR MANUAL
         btn.classList.replace('amarillo','verde');
-        btn.textContent=`Encender\nLuz ${i}`;
-        enviarMQTT(`/luz${i}`, 'OFF');
+        btn.textContent = `Encender\nLuz ${btn.dataset.index}`;
+        enviarMQTT(`/luz${btn.dataset.index}`, 'OFF');
       }
     });
   }
 }
+
+
+
+
+
 
 // -------- SUSCRIPCIONES Y LISTENER GENERAL --------
 client.on('connect', ()=>{
