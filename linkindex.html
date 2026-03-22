@@ -355,11 +355,14 @@ client.on('connect', ()=>{
 client.on('message', (topic, message)=>{
   const msgStr = message.toString();
 
-  // Actualizar estado de luces
   botonesLuz.forEach((btn,i)=>{
     const subTopic = `${ct}/luz${i+1}`;
     if(topic === subTopic){
-      if(msgStr==='on'){
+
+      // 🚫 SI ESTÁ EN AMARILLO, NO TOCAR (estado temporal)
+      if(btn.classList.contains('amarillo')) return;
+
+      if(msgStr === 'on'){
         btn.classList.replace('verde','amarillo');
         btn.textContent=`Apagar\nLuz ${i+1}`;
       } else {
@@ -369,6 +372,9 @@ client.on('message', (topic, message)=>{
     }
   });
 });
+
+
+
 
 // -------- VALIDACIÓN ACCESO --------
 function validarAcceso() {
