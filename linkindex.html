@@ -414,6 +414,31 @@ client.on('message', (topic, message)=>{
       }
     }
   });
+
+  // -------- LOG PUERTAS --------
+  if (topic === logTopic && popupLog.style.display === 'flex') {
+    try {
+      let logData = JSON.parse(message.toString());
+      if (!Array.isArray(logData)) logData = [logData];  
+  
+      let html = '';
+      logData.forEach(entry => {
+        html += `<div>
+            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
+            <strong>Acción:</strong> ${entry.accion || '-'}<br>
+            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
+            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
+            <hr>
+        </div>`;
+      });  
+
+      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
+    } catch (e) {
+      contenidoLog.textContent = 'Error al leer log.';
+      console.error(e);
+    }
+  }
+
 });
 
 
@@ -620,34 +645,6 @@ if(cerrarPopupLog && popupLog){
 // Suscripción única al topic de log
 client.subscribe(logTopic, { qos: 1 });
 
-// Listener único para todos los mensajes MQTT
-client.on('message', (topic, msg) => {
-  const msgStr = msg.toString();
-
-  // Filtrar solo log de puertas y solo si popup visible
-  if (topic === logTopic && popupLog.style.display === 'flex') {
-    try {
-      let logData = JSON.parse(msgStr);
-      if (!Array.isArray(logData)) logData = [logData];
-
-      let html = '';
-      logData.forEach(entry => {
-        html += `<div>
-            <strong>Puerta:</strong> ${entry.puerta || '-'}<br>
-            <strong>Acción:</strong> ${entry.accion || '-'}<br>
-            <strong>Fecha/Hora:</strong> ${entry.fechaHora || '-'}<br>
-            <strong>Usuario:</strong> ${entry.usuario || '-'}<br>
-            <hr>
-        </div>`;
-      });
-
-      contenidoLog.innerHTML = html || 'No hay entradas en el log.';
-    } catch (e) {
-      contenidoLog.textContent = 'Error al leer log.';
-      console.error(e);
-    }
-  }
-});
 
 // Función para mostrar popup log
 function mostrarPopupLogGeneral() {
@@ -679,6 +676,7 @@ function mostrarPopupLogGeneral() {
     pw: decoded['pw'] || ''
   };
 
+  console.log("📡 ENVIANDO GETLOG MQTT:", logTopic, mensaje);
   client.publish(logTopic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if(err) console.error('Error al pedir log:', err);
   });
