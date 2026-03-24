@@ -153,16 +153,26 @@ function enviarMQTT(){
   ultimoID = idMsg;
   const mensaje = {
     id:idMsg,
+    fechaHoraEnvio: new Date().toISOString(),
     accion:'getLog',
     clave:k,
     ct:ct,
     apartamento:a,
-    z_ia_apto: ia_apto.value,
+    fechaAlta: decoded['fa']||'',
+    fechaEntrada: decoded['fe']||'',
+    horaEntrada: decoded['he']||'',
+    fechaFin: decoded['fs']||'',
+    horaFin: decoded['hs']||'',
+    cp_portal: +(decoded['cp']||0),
+    ca_apto: +(decoded['ca']||0),
+    l_luz: decoded['l']||'',
+    duracion_rele: decoded['duracion_rele']||'',
     z_clave_secreta: clave_secreta.value,
     z_clave_secreta_log: clave_secreta_log.value,
+    z_ia_apto: ia_apto.value,
+    z_mqtt_datos: mqtt_datos.value,
     z_wifi_nombre: wifi_nombre.value,
-    z_wifi_password: wifi_pass.value,
-    z_mqtt_datos: mqtt_datos.value
+    z_wifi_password: wifi_pass.value
   };
 
   console.log("📡 Enviando MQTT -> Topic:", `${ct}/puertas/log`, "Mensaje:", mensaje);
