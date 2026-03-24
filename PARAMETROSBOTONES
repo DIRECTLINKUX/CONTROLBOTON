@@ -12,7 +12,7 @@ body {
   align-items:center;
   height:100vh;
   background:#eee;
-}
+} 
 #botonAcceso {
   font-size:2rem;
   padding:1rem 2rem;
