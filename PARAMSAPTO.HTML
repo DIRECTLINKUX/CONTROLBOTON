@@ -9,8 +9,8 @@ body { font-family: Arial; display:flex; justify-content:center; align-items:fle
 label { display:block; font-weight:bold; margin-top:10px; }
 input { width:100%; padding:8px; margin-bottom:10px; }
 input[readonly] { background:#ddd; }
-#botonAcceso { width:100%; padding:15px; font-size:1.2rem; border:none; border-radius:10px; background:green; color:white; margin-top:10px; }
-#botonAcceso.gris { background:gray; }
+#botonAcceso { width:100%; padding:15px; font-size:1.2rem; border:none; border-radius:10px; background:green; color:white; margin-top:10px; cursor:pointer; }
+#botonAcceso.gris { background:gray; cursor:not-allowed; }
 #botonAcceso.pulsando { background:orange; }
 #botonAcceso.enviando { background:blue; }
 #botonAcceso.ok { background:green; }
@@ -198,11 +198,42 @@ function enviarMQTT(){
 
 // ======== BOTÓN 3s ========
 let t=null;
-boton.onmousedown=()=>{ boton.classList.add('pulsando'); t=setTimeout(()=>{ enviarMQTT(); },3000); };
+boton.onmousedown=()=>{ 
+  if(!boton.disabled){
+    boton.classList.add('pulsando'); 
+    t=setTimeout(()=>{ enviarMQTT(); },3000); 
+  }
+};
 boton.onmouseup=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
 boton.onmouseleave=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
 boton.ontouchstart=boton.onmousedown;
 boton.ontouchend=boton.onmouseup;
+
+// ======== VALIDACIÓN FECHA/HORA ========
+function validarHorario() {
+  const ahora = new Date();
+  const fe = decoded['fe'] || '';
+  const he = decoded['he'] || '00:00';
+  const fs = decoded['fs'] || '';
+  const hs = decoded['hs'] || '23:59';
+
+  if(!fe || !fs) return;
+
+  const fechaInicio = new Date(`${fe}T${he}:00`);
+  const fechaFin = new Date(`${fs}T${hs}:59`);
+
+  if(ahora >= fechaInicio && ahora <= fechaFin){
+    boton.classList.remove('gris');
+    boton.disabled = false;
+  } else {
+    boton.classList.add('gris');
+    boton.disabled = true;
+  }
+}
+
+// validar al cargar y cada minuto
+validarHorario();
+setInterval(validarHorario, 60000);
 
 </script>
 </body>
