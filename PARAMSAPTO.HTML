@@ -1,86 +1,24 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
-<style>
-body {
-  font-family: Arial;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  background:#eee;
-}
-
-#contenedor {
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  width:400px;
-}
-
-input {
-  width:100%;
-  padding:8px;
-  margin-bottom:10px;
-}
-
-input[readonly] {
-  background:#ddd;
-}
-
-#botonAcceso {
-  width:100%;
-  padding:15px;
-  font-size:1.2rem;
-  border:none;
-  border-radius:10px;
-  background:green;
-  color:white;
-}
-
-#botonAcceso.gris { background:gray; }
-#botonAcceso.pulsando { background:orange; }
-#botonAcceso.enviando { background:blue; }
-#botonAcceso.ok { background:green; }
-#botonAcceso.error { background:red; }
-
-#estado {
-  text-align:center;
-  margin-top:10px;
-  font-weight:bold;
-}
-</style>
-</head>
-
-<body>
-
-<div id="contenedor">
-
-<h3>Datos recibidos</h3>
-<input id="pw" readonly>
-<input id="id" readonly>
-<input id="cl" readonly>
-<input id="mqtt" readonly>
-
-<h3>Configuración</h3>
-<input id="ia_apto" placeholder="IA_APTO">
-<input id="clave_secreta" placeholder="CLAVE_SECRETA">
-<input id="clave_secreta_log" placeholder="CLAVE_SECRETA_LOG">
-<input id="wifi_nombre" placeholder="NOMBRE WIFI">
-<input id="wifi_pass" placeholder="PASSWORD WIFI">
-<input id="mqtt_datos" placeholder="DATOS MQTT">
-
-<button id="botonAcceso">Mantener 3s</button>
-<div id="estado"></div>
-
-</div>
+<!-- ... tu HTML arriba igual ... -->
 
 <script>
 // ================= LOCAL STORAGE =================
 const STORAGE_KEY = "config_mqtt_usuario";
+
+// refs a inputs (antes de usarlas)
+const pwEl = document.getElementById('pw');
+const idEl = document.getElementById('id');
+const clEl = document.getElementById('cl');
+const mqttEl = document.getElementById('mqtt');
+
+const ia_apto = document.getElementById('ia_apto');
+const clave_secreta = document.getElementById('clave_secreta');
+const clave_secreta_log = document.getElementById('clave_secreta_log');
+const wifi_nombre = document.getElementById('wifi_nombre');
+const wifi_pass = document.getElementById('wifi_pass');
+const mqtt_datos = document.getElementById('mqtt_datos');
+
+const boton = document.getElementById('botonAcceso');
+const estado = document.getElementById('estado');
 
 function guardarLocal(){
   const data = {
@@ -125,7 +63,7 @@ try{
     const [k,v]=p.split('=');
     decoded[k]=v||'';
   });
-}catch(e){}
+}catch(e){console.error(e)}
 
 // ================= EXTRAER =================
 const {k,a,ct,fa,fe,he,fs,hs,m1,m2} = decoded;
@@ -133,29 +71,13 @@ let m3 = decoded['m3']||'';
 
 const pw=decoded['pw'], idv=decoded['id'], cl=decoded['cl'], mqtt_full=decoded['mqtt'];
 
-// pintar
-pw && (pwEl.value=pw);
-idv && (idEl.value=idv);
-cl && (clEl.value=cl);
-mqtt_full && (mqttEl.value=mqtt_full);
+// pintar valores recibidos
+if(pw) pwEl.value = pw;
+if(idv) idEl.value = idv;
+if(cl) clEl.value = cl;
+if(mqtt_full) mqttEl.value = mqtt_full;
 
-// refs
-const ia_apto = document.getElementById('ia_apto');
-const clave_secreta = document.getElementById('clave_secreta');
-const clave_secreta_log = document.getElementById('clave_secreta_log');
-const wifi_nombre = document.getElementById('wifi_nombre');
-const wifi_pass = document.getElementById('wifi_pass');
-const mqtt_datos = document.getElementById('mqtt_datos');
-
-const boton = document.getElementById('botonAcceso');
-const estado = document.getElementById('estado');
-
-const pwEl = document.getElementById('pw');
-const idEl = document.getElementById('id');
-const clEl = document.getElementById('cl');
-const mqttEl = document.getElementById('mqtt');
-
-// cargar storage
+// cargar configuración del localStorage
 cargarLocal();
 
 // ================= MQTT =================
@@ -184,10 +106,8 @@ let timeoutAck=null;
 client.on('message',(topic,msg)=>{
   try{
     const data = JSON.parse(msg.toString());
-
     if(data.id === ultimoID){
       clearTimeout(timeoutAck);
-
       estado.textContent="✅ OK recibido";
       boton.className="ok";
 
@@ -196,13 +116,11 @@ client.on('message',(topic,msg)=>{
         estado.textContent="";
       },2000);
     }
-
   }catch(e){}
 });
 
 // ================= ENVIAR =================
 function enviarMQTT(){
-
   guardarLocal();
 
   const idMsg = Date.now();
@@ -214,7 +132,6 @@ function enviarMQTT(){
     clave:k,
     ct:ct,
     apartamento:a,
-
     z_ia_apto: ia_apto.value,
     z_clave_secreta: clave_secreta.value,
     z_clave_secreta_log: clave_secreta_log.value,
@@ -267,6 +184,3 @@ boton.ontouchstart=boton.onmousedown;
 boton.ontouchend=boton.onmouseup;
 
 </script>
-
-</body>
-</html>
