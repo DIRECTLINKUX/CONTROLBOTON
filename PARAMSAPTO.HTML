@@ -22,10 +22,12 @@ input[readonly] { background:#ddd; }
 
 <div id="contenedor">
 
-<h3>Datos recibidos</h3>
-<label>PW</label><input id="pw" readonly>
+<h3 id="tituloDatos">Datos recibidos</h3>
+
+<!-- Campos recibidos reordenados y renombrados -->
 <label>ID</label><input id="id" readonly>
-<label>CL</label><input id="cl" readonly>
+<label>Clave Link:</label><input id="cl" readonly>
+<label>Password Log:</label><input id="pw" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
 <h3>Configuración</h3>
@@ -36,7 +38,7 @@ input[readonly] { background:#ddd; }
 <label>PASSWORD WIFI</label><input id="wifi_pass" placeholder="PASSWORD WIFI">
 <label>DATOS MQTT</label><input id="mqtt_datos" placeholder="DATOS MQTT">
 
-<button id="botonAcceso">Mantener 3s</button>
+<button id="botonAcceso">MODIFICAR PARAMETROS DEL RELE: PULSAR 3 SEGUNDOS</button>
 <div id="estadoConexion">⏳ Desconectado</div>
 
 </div>
@@ -120,6 +122,12 @@ pwEl.value = pw;
 idEl.value = idv;
 clEl.value = cl;
 mqttEl.value = mqtt_full;
+
+// actualizar título con número de apartamento
+const tituloDatos = document.getElementById('tituloDatos');
+if(decoded['a']){
+  tituloDatos.textContent = `Parametros de Apartamento ${decoded['a']}`;
+}
 
 // cargar LocalStorage
 cargarLocal();
