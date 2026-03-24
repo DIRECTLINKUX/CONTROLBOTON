@@ -158,38 +158,79 @@ client.on('message',(topic,msg)=>{
   }catch(e){}
 });
 
-// ======== VALIDACIÓN HORARIO ========
-function crearFecha(f,h){
-  if(!f) return null;
-  const [y,m,d] = f.split('-').map(Number);
-  const [hh,mm] = (h||"00:00").split(':').map(Number);
-  return new Date(y,m-1,d,hh||0,mm||0,0);
+
+// ======== VALIDACIÓN HORARIO CORRECTA (FECHA + HORA REAL) ========
+
+function limpiarValor(v){
+  return decodeURIComponent((v||'').trim());
+}
+
+function crearFechaHora(fecha, hora){
+  fecha = limpiarValor(fecha);
+  hora = limpiarValor(hora || "00:00");
+
+  if(!fecha) return null;
+
+  const partesF = fecha.split('-');
+  if(partesF.length !== 3) return null;
+
+  const y = parseInt(partesF[0]);
+  const m = parseInt(partesF[1]);
+  const d = parseInt(partesF[2]);
+
+  const partesH = hora.split(':');
+  const hh = parseInt(partesH[0] || 0);
+  const mm = parseInt(partesH[1] || 0);
+
+  return new Date(y, m-1, d, hh, mm, 0);
 }
 
 function validarHorario(){
+
   const ahora = new Date();
-  const inicio = crearFecha(decoded['fe'],decoded['he']);
-  const fin = crearFecha(decoded['fs'],decoded['hs']||"23:59");
+
+  // 👉 FECHA/HORA ENTRADA DEL LINK
+  const inicio = crearFechaHora(decoded['fe'], decoded['he']);
+
+  // 👉 FECHA/HORA SALIDA DEL LINK
+  const fin = crearFechaHora(decoded['fs'], decoded['hs'] || "23:59");
+
+  console.log("AHORA:", ahora);
+  console.log("INICIO:", inicio);
+  console.log("FIN:", fin);
 
   if(!inicio || !fin){
-    boton.disabled=true;
+    boton.disabled = true;
     boton.classList.add('gris');
-    mensajeHorario.textContent="❌ Error en fechas";
+    mensajeHorario.textContent = "❌ Error en fechas del link";
     return;
   }
 
-  if(ahora>=inicio && ahora<=fin){
-    boton.disabled=false;
+  // 👉 VALIDACIÓN REAL ENTRE FECHA+HORA
+  if(ahora >= inicio && ahora <= fin){
+
+    boton.disabled = false;
     boton.classList.remove('gris');
-    mensajeHorario.textContent="";
-  }else{
-    boton.disabled=true;
+    mensajeHorario.textContent = "";
+
+  } else {
+
+    boton.disabled = true;
     boton.classList.add('gris');
-    mensajeHorario.textContent=`❌ Fuera de horario (${decoded['fe']} ${decoded['he']} → ${decoded['fs']} ${decoded['hs']})`;
+
+    mensajeHorario.textContent =
+      `❌ Fuera de horario (${decoded['fe']} ${decoded['he']} → ${decoded['fs']} ${decoded['hs']})`;
   }
 }
+
+// ejecutar
 validarHorario();
-setInterval(validarHorario,60000);
+setInterval(validarHorario, 60000);
+
+
+
+
+
 
 // ======== ENVIAR MQTT COMPLETO ========
 function enviarMQTT(){
