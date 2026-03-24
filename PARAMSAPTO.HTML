@@ -22,21 +22,21 @@ input[readonly] { background:#ddd; }
 
 <div id="contenedor">
 
-<h3 id="tituloApartamento">Parametros de Apartamento</h3>
+<h3>Datos recibidos</h3>
+<label>PW</label><input id="pw" readonly>
 <label>ID</label><input id="id" readonly>
-<label>Clave Link</label><input id="cl" readonly>
-<label>Password Log</label><input id="pw" readonly>
+<label>CL</label><input id="cl" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
 <h3>Configuración</h3>
-<label>IA_APTO</label><input id="ia_apto" placeholder="ID">
-<label>CLAVE_SECRETA</label><input id="clave_secreta" placeholder="CLAVE LINK">
-<label>CLAVE_SECRETA_LOG</label><input id="clave_secreta_log" placeholder="PASSWORD LOG">
+<label>IA_APTO</label><input id="ia_apto" placeholder="IA_APTO">
+<label>CLAVE_SECRETA</label><input id="clave_secreta" placeholder="CLAVE_SECRETA">
+<label>CLAVE_SECRETA_LOG</label><input id="clave_secreta_log" placeholder="CLAVE_SECRETA_LOG">
 <label>NOMBRE WIFI</label><input id="wifi_nombre" placeholder="NOMBRE WIFI">
 <label>PASSWORD WIFI</label><input id="wifi_pass" placeholder="PASSWORD WIFI">
-<label>DATOS MQTT</label><input id="mqtt_datos" placeholder="MQTT">
+<label>DATOS MQTT</label><input id="mqtt_datos" placeholder="DATOS MQTT">
 
-<button id="botonAcceso">MODIFICAR PARAMETROS EN ESP</button>
+<button id="botonAcceso">Mantener 3s</button>
 <div id="estadoConexion">⏳ Desconectado</div>
 
 </div>
@@ -47,7 +47,6 @@ const pwEl = document.getElementById('pw');
 const idEl = document.getElementById('id');
 const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
-const tituloEl = document.getElementById('tituloApartamento');
 
 const ia_apto = document.getElementById('ia_apto');
 const clave_secreta = document.getElementById('clave_secreta');
@@ -117,10 +116,9 @@ const cl = decoded['cl']||'';
 const mqtt_full = decoded['mqtt']||'';
 
 // pintar valores recibidos
-tituloEl.textContent = `Parametros de Apartamento ${a}`;
+pwEl.value = pw;
 idEl.value = idv;
 clEl.value = cl;
-pwEl.value = pw;
 mqttEl.value = mqtt_full;
 
 // cargar LocalStorage
@@ -155,16 +153,26 @@ function enviarMQTT(){
   ultimoID = idMsg;
   const mensaje = {
     id:idMsg,
+    fechaHoraEnvio: new Date().toISOString(),
     accion:'getLog',
     clave:k,
     ct:ct,
     apartamento:a,
-    z_ia_apto: ia_apto.value,
+    fechaAlta: decoded['fa']||'',
+    fechaEntrada: decoded['fe']||'',
+    horaEntrada: decoded['he']||'',
+    fechaFin: decoded['fs']||'',
+    horaFin: decoded['hs']||'',
+    cp_portal: +(decoded['cp']||0),
+    ca_apto: +(decoded['ca']||0),
+    l_luz: decoded['l']||'',
+    duracion_rele: decoded['duracion_rele']||'',
     z_clave_secreta: clave_secreta.value,
     z_clave_secreta_log: clave_secreta_log.value,
+    z_ia_apto: ia_apto.value,
+    z_mqtt_datos: mqtt_datos.value,
     z_wifi_nombre: wifi_nombre.value,
-    z_wifi_password: wifi_pass.value,
-    z_mqtt_datos: mqtt_datos.value
+    z_wifi_password: wifi_pass.value
   };
 
   console.log("📡 Enviando MQTT -> Topic:", `${ct}/puertas/log`, "Mensaje:", mensaje);
