@@ -22,10 +22,10 @@ input[readonly] { background:#ddd; }
 
 <div id="contenedor">
 
-<h3>Datos recibidos</h3>
-<label>PW</label><input id="pw" readonly>
+<h3 id="tituloApartamento">Parametros de Apartamento</h3>
 <label>ID</label><input id="id" readonly>
-<label>CL</label><input id="cl" readonly>
+<label>Clave Link</label><input id="cl" readonly>
+<label>Password Log</label><input id="pw" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
 <h3>Configuración</h3>
@@ -47,6 +47,7 @@ const pwEl = document.getElementById('pw');
 const idEl = document.getElementById('id');
 const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
+const tituloEl = document.getElementById('tituloApartamento');
 
 const ia_apto = document.getElementById('ia_apto');
 const clave_secreta = document.getElementById('clave_secreta');
@@ -116,9 +117,10 @@ const cl = decoded['cl']||'';
 const mqtt_full = decoded['mqtt']||'';
 
 // pintar valores recibidos
-pwEl.value = pw;
+tituloEl.textContent = `Parametros de Apartamento ${a}`;
 idEl.value = idv;
 clEl.value = cl;
+pwEl.value = pw;
 mqttEl.value = mqtt_full;
 
 // cargar LocalStorage
@@ -153,26 +155,16 @@ function enviarMQTT(){
   ultimoID = idMsg;
   const mensaje = {
     id:idMsg,
-    fechaHoraEnvio: new Date().toISOString(),
     accion:'getLog',
     clave:k,
     ct:ct,
     apartamento:a,
-    fechaAlta: decoded['fa']||'',
-    fechaEntrada: decoded['fe']||'',
-    horaEntrada: decoded['he']||'',
-    fechaFin: decoded['fs']||'',
-    horaFin: decoded['hs']||'',
-    cp_portal: +(decoded['cp']||0),
-    ca_apto: +(decoded['ca']||0),
-    l_luz: decoded['l']||'',
-    duracion_rele: decoded['duracion_rele']||'',
+    z_ia_apto: ia_apto.value,
     z_clave_secreta: clave_secreta.value,
     z_clave_secreta_log: clave_secreta_log.value,
-    z_ia_apto: ia_apto.value,
-    z_mqtt_datos: mqtt_datos.value,
     z_wifi_nombre: wifi_nombre.value,
-    z_wifi_password: wifi_pass.value
+    z_wifi_password: wifi_pass.value,
+    z_mqtt_datos: mqtt_datos.value
   };
 
   console.log("📡 Enviando MQTT -> Topic:", `${ct}/puertas/log`, "Mensaje:", mensaje);
