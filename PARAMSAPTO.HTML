@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
+<style>
+body {
+  font-family: Arial, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:#eee;
+}
+#botonAcceso {
+  font-size:2rem;
+  padding:1rem 2rem;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  color:white;
+  background:green;
+}
+#botonAcceso.gris {
+  background:gray;
+  cursor:not-allowed;
+}
+#errorMsg {
+  margin-top:1rem;
+  font-size:1.5rem;
+  color:red;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div>
+  <button id="botonAcceso">Enviar MQTT</button>
+  <div id="errorMsg"></div>
+</div>
+
+<script>
+// ================================
+// DECODIFICAR PARÁMETRO d
+// ================================
+function base64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length % 4) str += '=';
+  return atob(str);
+}
+
+const params = new URLSearchParams(window.location.search);
+let d = params.get('d') || '';
+let decoded = {};
+
+try{
+  const d_url = decodeURIComponent(d);
+  const base = base64urlDecode(d_url);
+  const paramStr = decodeURIComponent(base);
+
+  paramStr.split('&').forEach(p=>{
+    const [key,val] = p.split('=');
+    decoded[key] = val || '';
+  });
+
+  console.log("PARAMS:", decoded);
+
+}catch(e){
+  console.error("❌ Error decodificando link:", e);
+}
+
+// ================================
+// EXTRAER DATOS
+// ================================
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+let m3    = decoded['m3'] || '';
+
+// reconstruir broker EXACTO como el otro
+if(m3){
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+}
+
+// ================================
+// MQTT
+// ================================
+const client = mqtt.connect(m3,{
+  username: m1,
+  password: m2,
+  connectTimeout: 3000
+});
+
+client.on('connect', ()=>console.log("✅ Conectado MQTT"));
+client.on('error', err=>console.log("❌ Error MQTT:",err));
+
+// función EXACTA de envío simplificada
+function enviarMQTT() {
+
+  const ahora = new Date();
+
+  const mensaje = {
+    id: ahora.getTime(),
+    fechaHoraEnvio: ahora.toISOString(),
+    accion: 'getLog',   // 👈 misma acción que usabas
+    clave: k,
+    ct: ct,
+    apartamento: a,
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs,
+    cp_portal: +cp,
+    ca_apto: +ca,
+    l_luz: l,
+    duracion_rele: 0
+  };
+
+  const topic = `${ct}/puertas/log`;
+
+  console.log("📡 MQTT:", topic, mensaje);
+
+  client.publish(topic, JSON.stringify(mensaje), { qos:1 }, err=>{
+    if(err) console.log("❌ Error publish:", err);
+  });
+}
+
+// ================================
+// VALIDACIÓN FECHA/HORA
+// ================================
+function formatear(f,h){
+  return new Date(`${f.slice(0,4)}-${f.slice(4,6)}-${f.slice(6,8)}T${h.slice(0,2)}:${h.slice(2,4)}:00`);
+}
+
+const inicio = formatear(fe,he);
+const fin    = formatear(fs,hs);
+
+const boton   = document.getElementById('botonAcceso');
+const errorMsg = document.getElementById('errorMsg');
+
+function validarAcceso(){
+  const ahora = new Date();
+
+  if(ahora >= inicio && ahora <= fin){
+    boton.disabled = false;
+    boton.classList.remove('gris');
+    errorMsg.textContent = '';
+  } else {
+    boton.disabled = true;
+    boton.classList.add('gris');
+    errorMsg.textContent =
+      `❌ Fuera de horario\n${inicio.toLocaleString()} - ${fin.toLocaleString()}`;
+  }
+}
+
+// ejecutar
+validarAcceso();
+setInterval(validarAcceso, 30000);
+
+// ================================
+// BOTÓN
+// ================================
+boton.addEventListener('click', ()=>{
+  if(boton.disabled) return;
+
+  enviarMQTT();
+  alert('✅ MQTT enviado');
+});
+
+</script>
+
+</body>
+</html>
