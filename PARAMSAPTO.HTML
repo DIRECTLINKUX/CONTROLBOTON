@@ -30,13 +30,14 @@ input[readonly] { background:#ddd; }
 <label>Password Log:</label><input id="pw" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
+
 <h3>Configuración</h3>
-<label>IA_APTO</label><input id="ia_apto">
-<label>CLAVE_SECRETA</label><input id="clave_secreta">
-<label>CLAVE_SECRETA_LOG</label><input id="clave_secreta_log">
+<label>ID</label><input id="ia_apto">
+<label>CLAVE LINK</label><input id="clave_secreta">
+<label>PASSWORD LOG</label><input id="clave_secreta_log">
 <label>NOMBRE WIFI</label><input id="wifi_nombre">
 <label>PASSWORD WIFI</label><input id="wifi_pass">
-<label>DATOS MQTT</label><input id="mqtt_datos">
+<label>MQTT</label><input id="mqtt_datos">
 
 <button id="botonAcceso">MODIFICAR PARAMETROS DEL RELE: PULSAR 3 SEGUNDOS</button>
 <div id="estadoConexion">⏳ Desconectado</div>
@@ -52,12 +53,12 @@ const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
 const mensajeHorario = document.getElementById('mensajeHorario');
 
-const ia_apto = document.getElementById('ID');
-const clave_secreta = document.getElementById('CLAVE LINK');
-const clave_secreta_log = document.getElementById('PASSWORD LOG');
-const wifi_nombre = document.getElementById('NOMBRE WIFI');
-const wifi_pass = document.getElementById('CLAVE WIFI');
-const mqtt_datos = document.getElementById('MQTT');
+const ia_apto = document.getElementById('ia_apto');
+const clave_secreta = document.getElementById('clave_secreta');
+const clave_secreta_log = document.getElementById('clave_secreta_log');
+const wifi_nombre = document.getElementById('wifi_nombre');
+const wifi_pass = document.getElementById('wifi_pass');
+const mqtt_datos = document.getElementById('mqtt_datos');
 
 const boton = document.getElementById('botonAcceso');
 const estado = document.getElementById('estadoConexion');
