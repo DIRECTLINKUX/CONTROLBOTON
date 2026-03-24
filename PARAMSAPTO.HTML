@@ -1,58 +1,258 @@
-// ======== VALIDACIÓN FECHA/HORA (CORRECTA) ========
-function crearFechaLocalSeguro(fecha, hora){
-  if(!fecha) return null;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+body { font-family: Arial; display:flex; justify-content:center; align-items:flex-start; padding-top:20px; background:#eee; }
+#contenedor { background:white; padding:20px; border-radius:10px; width:400px; }
+label { display:block; font-weight:bold; margin-top:10px; }
+input { width:100%; padding:8px; margin-bottom:10px; }
+input[readonly] { background:#ddd; }
+#botonAcceso { width:100%; padding:15px; font-size:1.2rem; border:none; border-radius:10px; background:green; color:white; margin-top:10px; cursor:pointer; }
+#botonAcceso.gris { background:gray; cursor:not-allowed; }
+#botonAcceso.pulsando { background:orange; }
+#botonAcceso.enviando { background:blue; }
+#botonAcceso.ok { background:green; }
+#botonAcceso.error { background:red; }
+#estadoConexion { text-align:center; margin-top:10px; font-weight:bold; padding:5px; border-radius:5px; border:1px solid #ccc; }
+#mensajeHorario { text-align:center; margin-top:10px; font-weight:bold; color:red; }
+</style>
+</head>
+<body>
 
-  fecha = fecha.trim();
-  hora = (hora || "00:00").trim();
+<div id="contenedor">
 
-  const partesFecha = fecha.split('-');
-  const partesHora = hora.split(':');
+<h3 id="tituloDatos">Datos recibidos</h3>
 
-  if(partesFecha.length !== 3) return null;
+<label>ID</label><input id="id" readonly>
+<label>Clave Link:</label><input id="cl" readonly>
+<label>Password Log:</label><input id="pw" readonly>
+<label>MQTT</label><input id="mqtt" readonly>
 
-  const y = parseInt(partesFecha[0]);
-  const m = parseInt(partesFecha[1]);
-  const d = parseInt(partesFecha[2]);
+<h3>Configuración</h3>
+<label>IA_APTO</label><input id="ia_apto">
+<label>CLAVE_SECRETA</label><input id="clave_secreta">
+<label>CLAVE_SECRETA_LOG</label><input id="clave_secreta_log">
+<label>NOMBRE WIFI</label><input id="wifi_nombre">
+<label>PASSWORD WIFI</label><input id="wifi_pass">
+<label>DATOS MQTT</label><input id="mqtt_datos">
 
-  const hh = parseInt(partesHora[0] || 0);
-  const mm = parseInt(partesHora[1] || 0);
+<button id="botonAcceso">MODIFICAR PARAMETROS DEL RELE: PULSAR 3 SEGUNDOS</button>
+<div id="estadoConexion">⏳ Desconectado</div>
+<div id="mensajeHorario"></div>
 
-  return new Date(y, m-1, d, hh, mm, 0);
+</div>
+
+<script>
+// ======== referencias ========
+const pwEl = document.getElementById('pw');
+const idEl = document.getElementById('id');
+const clEl = document.getElementById('cl');
+const mqttEl = document.getElementById('mqtt');
+const mensajeHorario = document.getElementById('mensajeHorario');
+
+const ia_apto = document.getElementById('ia_apto');
+const clave_secreta = document.getElementById('clave_secreta');
+const clave_secreta_log = document.getElementById('clave_secreta_log');
+const wifi_nombre = document.getElementById('wifi_nombre');
+const wifi_pass = document.getElementById('wifi_pass');
+const mqtt_datos = document.getElementById('mqtt_datos');
+
+const boton = document.getElementById('botonAcceso');
+const estado = document.getElementById('estadoConexion');
+
+// ======== LocalStorage ========
+const STORAGE_KEY = "config_mqtt_usuario";
+function guardarLocal(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    ia_apto: ia_apto.value,
+    clave_secreta: clave_secreta.value,
+    clave_secreta_log: clave_secreta_log.value,
+    wifi_nombre: wifi_nombre.value,
+    wifi_pass: wifi_pass.value,
+    mqtt_datos: mqtt_datos.value
+  }));
+}
+function cargarLocal(){
+  const d = JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+  ia_apto.value = d.ia_apto || "";
+  clave_secreta.value = d.clave_secreta || "";
+  clave_secreta_log.value = d.clave_secreta_log || "";
+  wifi_nombre.value = d.wifi_nombre || "";
+  wifi_pass.value = d.wifi_pass || "";
+  mqtt_datos.value = d.mqtt_datos || "";
+}
+document.addEventListener('input', e=>{
+  if(e.target.tagName==="INPUT" && !e.target.readOnly) guardarLocal();
+});
+
+// ======== decode ========
+function base64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length % 4) str += '=';
+  return atob(str);
+}
+const params = new URLSearchParams(window.location.search);
+
+let decoded = {};
+try{
+  const dParam = params.get('d') || '';
+  if(dParam){
+    const base = base64urlDecode(decodeURIComponent(dParam));
+    decodeURIComponent(base).split('&').forEach(p=>{
+      const [k,v]=p.split('=');
+      decoded[k]=v||'';
+    });
+  }
+}catch(e){console.error("Error decodificando link:", e);}
+
+// ======== datos ========
+const k = decoded['k']||'';
+const a = decoded['a']||'';
+const ct = decoded['ct']||'';
+const m1 = decoded['m1']||'';
+const m2 = decoded['m2']||'';
+let m3 = decoded['m3']||'';
+
+pwEl.value = decoded['pw']||'';
+idEl.value = decoded['id']||'';
+clEl.value = decoded['cl']||'';
+mqttEl.value = decoded['mqtt']||'';
+
+if(a){
+  document.getElementById('tituloDatos').textContent =
+    `Parametros de Apartamento ${a}`;
 }
 
-function validarHorario() {
+cargarLocal();
+
+// ======== MQTT ========
+if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+
+const client = mqtt.connect(m3,{
+  username:m1,
+  password:m2,
+  reconnectPeriod:2000
+});
+
+client.on('connect', ()=>{
+  estado.textContent="🟢 Conectado";
+  client.subscribe(`${ct}/puertas/ack`);
+});
+client.on('reconnect', ()=>estado.textContent="🟡 Reconectando...");
+client.on('offline', ()=>estado.textContent="🔴 Offline");
+
+// ======== ACK ========
+let ultimoID=null;
+let timeoutAck=null;
+client.on('message',(topic,msg)=>{
+  try{
+    const data = JSON.parse(msg.toString());
+    if(data.id === ultimoID){
+      clearTimeout(timeoutAck);
+      estado.textContent="✅ OK recibido";
+      boton.className="ok";
+      setTimeout(()=>{ boton.className=""; estado.textContent="🟢 Conectado"; },2000);
+    }
+  }catch(e){}
+});
+
+// ======== VALIDACIÓN HORARIO ========
+function crearFecha(f,h){
+  if(!f) return null;
+  const [y,m,d] = f.split('-').map(Number);
+  const [hh,mm] = (h||"00:00").split(':').map(Number);
+  return new Date(y,m-1,d,hh||0,mm||0,0);
+}
+
+function validarHorario(){
   const ahora = new Date();
-
-  const fe = decoded['fe'];
-  const he = decoded['he'];
-  const fs = decoded['fs'];
-  const hs = decoded['hs'];
-
-  const inicio = crearFechaLocalSeguro(fe, he);
-  const fin = crearFechaLocalSeguro(fs, hs);
-
-  console.log("RAW LINK:", fe, he, fs, hs);
-  console.log("INICIO:", inicio);
-  console.log("FIN:", fin);
-  console.log("AHORA:", ahora);
+  const inicio = crearFecha(decoded['fe'],decoded['he']);
+  const fin = crearFecha(decoded['fs'],decoded['hs']||"23:59");
 
   if(!inicio || !fin){
+    boton.disabled=true;
     boton.classList.add('gris');
-    boton.disabled = true;
-    mensajeHorario.textContent = "❌ Error en fechas del link";
+    mensajeHorario.textContent="❌ Error en fechas";
     return;
   }
 
-  if(ahora >= inicio && ahora <= fin){
+  if(ahora>=inicio && ahora<=fin){
+    boton.disabled=false;
     boton.classList.remove('gris');
-    boton.disabled = false;
-    mensajeHorario.textContent = "";
-  } else {
+    mensajeHorario.textContent="";
+  }else{
+    boton.disabled=true;
     boton.classList.add('gris');
-    boton.disabled = true;
-    mensajeHorario.textContent = `❌ Fuera de horario (${fe} ${he} → ${fs} ${hs})`;
+    mensajeHorario.textContent=`❌ Fuera de horario (${decoded['fe']} ${decoded['he']} → ${decoded['fs']} ${decoded['hs']})`;
   }
 }
-
 validarHorario();
-setInterval(validarHorario, 60000);
+setInterval(validarHorario,60000);
+
+// ======== ENVIAR MQTT COMPLETO ========
+function enviarMQTT(){
+  guardarLocal();
+
+  const idMsg = Date.now();
+  ultimoID = idMsg;
+
+  const mensaje = {
+    id:idMsg,
+    fechaHoraEnvio: new Date().toISOString(),
+    accion:'getLog',
+    // ----- DATOS DEL LINK -----
+    clave:k,
+    ct:ct,
+    apartamento:a,
+    fechaAlta: decoded['fa']||'',
+    fechaEntrada: decoded['fe']||'',
+    horaEntrada: decoded['he']||'',
+    fechaFin: decoded['fs']||'',
+    horaFin: decoded['hs']||'',
+    cp_portal: +(decoded['cp']||0),
+    ca_apto: +(decoded['ca']||0),
+    l_luz: decoded['l']||'',
+    duracion_rele: decoded['duracion_rele']||'',
+    // ----- DATOS DEL USUARIO -----
+    z_clave_secreta: clave_secreta.value,
+    z_clave_secreta_log: clave_secreta_log.value,
+    z_ia_apto: ia_apto.value,
+    z_mqtt_datos: mqtt_datos.value,
+    z_wifi_nombre: wifi_nombre.value,
+    z_wifi_password: wifi_pass.value
+  };
+
+  const topic = `${ct}/puertas/log`;
+
+  console.log("📡 ENVIANDO MQTT", topic, mensaje);
+
+  boton.className="enviando";
+  estado.textContent="⏳ Enviando...";
+
+  client.publish(topic, JSON.stringify(mensaje), {qos:1});
+
+  timeoutAck = setTimeout(()=>{
+    estado.textContent="❌ Sin respuesta";
+    boton.className="error";
+    setTimeout(()=>{ boton.className=""; estado.textContent="🔴 Offline"; },3000);
+  },5000);
+}
+
+// ======== BOTÓN 3s ========
+let t=null;
+boton.onmousedown=()=>{
+  if(!boton.disabled){
+    boton.classList.add('pulsando');
+    t=setTimeout(()=>{ enviarMQTT(); },3000);
+  }
+};
+boton.onmouseup=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
+boton.onmouseleave=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
+boton.ontouchstart=boton.onmousedown;
+boton.ontouchend=boton.onmouseup;
+
+</script>
+</body>
+</html>
