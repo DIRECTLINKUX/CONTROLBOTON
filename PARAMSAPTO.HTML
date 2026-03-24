@@ -59,7 +59,6 @@ const estado = document.getElementById('estado');
 
 // ======== LocalStorage ========
 const STORAGE_KEY = "config_mqtt_usuario";
-
 function guardarLocal(){
   const data = {
     ia_apto: ia_apto.value,
@@ -71,7 +70,6 @@ function guardarLocal(){
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
-
 function cargarLocal(){
   const d = JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
   ia_apto.value = d.ia_apto || "";
@@ -90,6 +88,9 @@ function base64urlDecode(str){
   return atob(str);
 }
 
+// 🔹 CORRECCIÓN: crear params
+const params = new URLSearchParams(window.location.search);
+
 let decoded = {};
 try{
   const dParam = params.get('d') || '';
@@ -102,7 +103,7 @@ try{
   }
 }catch(e){ console.error("Error decodificando link:", e); }
 
-// ======== Extraer parámetros con fallback ========
+// ======== Extraer parámetros ========
 const k = decoded['k']||'';
 const a = decoded['a']||'';
 const ct = decoded['ct']||'';
@@ -131,13 +132,7 @@ cargarLocal();
 
 // ======== MQTT ========
 if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-
-const client = mqtt.connect(m3,{
-  username:m1,
-  password:m2,
-  reconnectPeriod:2000
-});
-
+const client = mqtt.connect(m3,{ username:m1, password:m2, reconnectPeriod:2000 });
 client.on('connect', ()=>{ estado.textContent="🟢 Conectado"; client.subscribe(`${ct}/puertas/ack`); });
 client.on('reconnect', ()=>estado.textContent="🟡 Reconectando...");
 client.on('offline', ()=>estado.textContent="🔴 Offline");
@@ -145,7 +140,6 @@ client.on('offline', ()=>estado.textContent="🔴 Offline");
 // ======== ACK ========
 let ultimoID=null;
 let timeoutAck=null;
-
 client.on('message',(topic,msg)=>{
   try{
     const data = JSON.parse(msg.toString());
@@ -189,14 +183,12 @@ function enviarMQTT(){
 
 // ======== BOTÓN 3s ========
 let t=null;
-boton.onmousedown=()=>{
-  boton.classList.add('pulsando');
-  t=setTimeout(()=>{ enviarMQTT(); },3000);
-};
+boton.onmousedown=()=>{ boton.classList.add('pulsando'); t=setTimeout(()=>{ enviarMQTT(); },3000); };
 boton.onmouseup=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
 boton.onmouseleave=()=>{ clearTimeout(t); boton.classList.remove('pulsando'); };
 boton.ontouchstart=boton.onmousedown;
 boton.ontouchend=boton.onmouseup;
+
 </script>
 </body>
 </html>
