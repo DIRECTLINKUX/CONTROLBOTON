@@ -308,19 +308,6 @@ if(decoded['m123e'] && decoded['pl']){
 </script>
 
 
-
-
-
-// -------- RECONSTRUIR MQTT --------
-// if(m3){
-//   m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-// }
-
-// -------- CONEXIÓN MQTT --------
-//const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
-//client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-//client.on('error', err=>console.log("❌ Error MQTT:",err));
-
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
     console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
@@ -715,9 +702,20 @@ if(cerrarPopupLog && popupLog){
   });
 }
 
-// Suscripción única al topic de log
-client.subscribe(logTopic, { qos: 1 });
+if (!window.client) {
+  console.error("❌ MQTT no inicializado aún");
+  return;
+}
 
+
+// Suscripción única al topic de log
+// client.subscribe(logTopic, { qos: 1 });
+client.on('connect', ()=>{
+
+  const logTopic = `${ct}/puertas/log`;
+  client.subscribe(logTopic, { qos: 1 });
+
+});
 
 // Función para mostrar popup log
 function mostrarPopupLogGeneral() {
