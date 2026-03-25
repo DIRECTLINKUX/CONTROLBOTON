@@ -257,23 +257,20 @@ async function aesDecrypt(ciphertext, password) {
     }
 }
 
-// Función para obtener m1, m2, m3 desde m encriptado
+
 async function obtenerM1M2M3(mEncriptado, pw) {
-    if(!mEncriptado || !pw) return [null,null,null];
     try {
-        const desEncriptado = await aesDecrypt(mEncriptado, pw);
-        const desComprimido = LZString.decompressFromUTF16(desEncriptado);
-        const partes = desComprimido.split('|');
-        return [
-            partes[0] || '',
-            partes[1] || '',
-            partes[2] || ''
-        ];
-    } catch(e) {
-        console.error('❌ Error al obtener m1,m2,m3:', e);
-        return [null,null,null];
+        const decryptedWords = CryptoJS.AES.decrypt(mEncriptado, pw);
+        const decryptedUTF16 = decryptedWords.toString(CryptoJS.enc.Utf16);
+        const mOriginal = LZString.decompressFromUTF16(decryptedUTF16);
+        const [m1, m2, m3] = mOriginal.split('|');
+        return { m1, m2, m3 };
+    } catch (e) {
+        console.error("❌ Error desencriptando AES:", e);
+        return null;
     }
 }
+
 
 
 // -------- RECONSTRUIR MQTT DESDE M ENCRIPTADO --------
