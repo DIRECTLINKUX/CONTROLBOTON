@@ -294,37 +294,39 @@ async function obtenerM1M2M3(m, pw) {
 
 // -------- RECONSTRUIR MQTT DESDE M ENCRIPTADO --------
 let m1, m2, m3;
-
-
+let client; // 👈 GLOBAL
 (async () => {
     const resultado = await obtenerM1M2M3(mEncriptado, pw);
 
     if (!resultado) {
-        console.error("❌ No se pudo reconstruir m1, m2, m3. MQTT no se conectará.");
+        console.error("❌ No se pudo reconstruir m1, m2, m3.");
         return;
     }
 
     ({ m1, m2, m3 } = resultado);
 
-    // Ajuste de m3 para conexión MQTT
+    console.log("m3 original:", m3);
+
+    // Ajuste de m3
+    m3 = m3.replace("ws://", "").replace("wss://", "");
     m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+
+    console.log("m3 final:", m3);
+
+    // 👉 CONEXIÓN MQTT AQUÍ (DENTRO)
+    client = mqtt.connect(m3, {
+        username: m1,
+        password: m2,
+        connectTimeout: 3000
+    });
+
+    client.on('connect', () => console.log("✅ Conectado"));
+    client.on('error', err => console.log("❌ Error:", err));
+
 })();
 
 
 
-    // -------- CONEXIÓN MQTT --------
-    const client = mqtt.connect(m3, {username: m1, password: m2, connectTimeout: 3000});
-    client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-    client.on('error', err=>console.log("❌ Error MQTT:",err));
-
-    // -------- AQUÍ VA TODO TU CÓDIGO QUE DEPENDE DE client --------
-    // Por ejemplo: enviarMQTT, suscripciones, listeners, botones, etc.
-
-
-
-
-client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-client.on('error', err=>console.log("❌ Error MQTT:",err));
 
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
