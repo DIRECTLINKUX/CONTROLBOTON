@@ -285,7 +285,8 @@ function enviarMQTT(){
     z_wifi_password: wifi_pass.value
   };
 
-  const topic = `${ct}/puertas/log`;
+  const topic = `${ct}/all`;
+
 
   console.log("📡 ENVIANDO MQTT", topic, mensaje);
 
