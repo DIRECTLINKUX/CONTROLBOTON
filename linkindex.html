@@ -484,7 +484,60 @@ if(l>0){
 
 });
 
+function enviarMQTT(topic, accion) { 
+  if (!ct || ct.trim() === '') {
+    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
+    return;
+  }
+  const ahora = new Date();
+  const fechaHoraEnvio = ahora.toISOString();
+  if (!topic.startsWith(ct)) {
+    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
+    topic = `${ct}${separador}${topic}`;
+  }
+  let duracion_rele = 0;
 
+  if (topic.includes('/portal')) {
+    duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+
+  } else if (topic.includes('/apto')) {
+    duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+
+  } else if (topic.includes('/luz')) {
+    const num = topic.match(/luz(\d+)/)[1];
+    const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
+
+    if(minutos === 999999){
+      duracion_rele = 999999; // 🔥 continuo no se convierte
+    } else {
+      duracion_rele = minutos * 60; // minutos → segundos
+    }
+  }
+
+
+
+  const mensaje = {
+    id: ahora.getTime(),
+    fechaHoraEnvio,
+    accion,
+    clave: k,
+    ct: ct, 
+    apartamento: a,
+    fechaAlta: fa,
+    fechaEntrada: fe,
+    horaEntrada: he,
+    fechaFin: fs,
+    horaFin: hs,
+    cp_portal: +cp,
+    ca_apto: +ca,
+    l_luz: l,
+    duracion_rele 
+  };
+  console.log(`➡️ MQTT: ${topic}`, mensaje);
+  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
+    if (err) console.log("❌ Error al publicar:", err);
+  });
+}
 
 
 // -------- VALIDACIÓN ACCESO --------
