@@ -242,8 +242,17 @@ const mEncriptado  = decoded['m'] || '';
 const pw           = decoded['pw'] || '';
 
 
-
 // -------- FUNCIONES PARA DESENCRIPTAR Y RECONSTRUIR m1,m2,m3 --------
+
+// Convierte UTF-16 a UTF-8
+function utf16ToUtf8(str) {
+    return unescape(encodeURIComponent(str));
+}
+
+// Convierte UTF-8 a UTF-16
+function utf8ToUtf16(str) {
+    return decodeURIComponent(escape(str));
+}
 
 // Función para desencriptar AES
 async function aesDecrypt(ciphertext, password) {
@@ -260,35 +269,44 @@ async function aesDecrypt(ciphertext, password) {
 async function obtenerM1M2M3(m, pw) {
     try {
         if (!m || !pw) throw new Error("m o pw vacíos");
-        
-        const mDecodificado = decodeURIComponent(m);        // Paso 1: decodeURIComponent
-        const mDesencriptado = await aesDecrypt(mDecodificado, pw); // Paso 2: desencriptar
-        if (!mDesencriptado) throw new Error("Desencriptado falló");
-        
-        const mDescomprimido = LZString.decompressFromUTF16(mDesencriptado); // Paso 3: descomprimir
-        if (!mDescomprimido) throw new Error("Descompresión falló");
-        
-        const [m1, m2, m3] = mDescomprimido.split('|'); // Paso 4: separar
+
+        // Paso 1: Decodificar URI
+        const mDecodificado = decodeURIComponent(m);
+
+        // Paso 2: Desencriptar AES
+        const mDesencriptado = await aesDecrypt(mDecodificado, pw);
+
+        // Paso 3: Convertir UTF-8 a UTF-16 para LZString
+        const mUTF16 = utf8ToUtf16(mDesencriptado);
+
+        // Paso 4: Descomprimir con LZString
+        const mDescomprimido = LZString.decompressFromUTF16(mUTF16);
+
+        // Paso 5: Separar m1, m2, m3
+        const [m1, m2, m3] = mDescomprimido.split('|');
+
         return { m1, m2, m3 };
-    } catch (e) {
-        console.error("Error obteniendo m1 m2 m3:", e);
+    } catch(e) {
+        console.error("❌ Error obteniendo m1 m2 m3:", e);
         return null;
     }
 }
 
-
 // -------- RECONSTRUIR MQTT DESDE M ENCRIPTADO --------
 let m1, m2, m3;
 (async () => {
-    [m1, m2, m3] = await obtenerM1M2M3(mEncriptado, pw);
+    const resultado = await obtenerM1M2M3(mEncriptado, pw);
 
-    if(!m1 || !m2 || !m3){
+    if(!resultado){
         console.error("❌ No se pudo reconstruir m1, m2, m3. MQTT no se conectará.");
         return;
     }
 
-    m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+    ({ m1, m2, m3 } = resultado);
 
+    // Ajuste de m3 para conexión MQTT
+    m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+})();
 
     // ---------- Mostrar en pantalla ----------
     document.getElementById('m1-text').textContent = m1;
