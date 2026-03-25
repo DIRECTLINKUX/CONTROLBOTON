@@ -711,6 +711,9 @@ function mostrarPopupLogGeneral() {
 
   // Enviar petición MQTT para obtener log
   const ahora = new Date();
+
+  let duracion_rele = parseInt(localStorage.getItem('tiempo_rele')) || 3;
+  
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio: ahora.toISOString(),
