@@ -207,6 +207,21 @@ Cerrar
   const params = new URLSearchParams(window.location.search);
   let d = params.get('d') || '';
   let decoded = {};
+console.log("PARAMS DECODIFICADOS:",decoded);
+
+// -------- EXTRAER PARÁMETROS --------
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const ia  = decoded['ia'] || 0;
 
   try{
     const d_url = decodeURIComponent(d);
@@ -282,24 +297,6 @@ Cerrar
     console.warn("⚠️ No hay m123e o pl en los parámetros del link");
   }
 
-
-
-// -------- EXTRAER PARÁMETROS --------
-const k   = decoded['k'];
-const a   = decoded['a'];
-const ct  = decoded['ct'];
-const fa  = decoded['fa'];
-const fe  = decoded['fe'];
-const he  = decoded['he'];
-const fs  = decoded['fs'];
-const hs  = decoded['hs'];
-const cp  = decoded['cp']==='1';
-const ca  = decoded['ca']==='1';
-const l   = parseInt(decoded['l'])||0;
-const ia  = decoded['ia'] || 0;
-const m1  = decoded['m1'];
-const m2  = decoded['m2'];
-let m3    = decoded['m3'] || '';
 
 // -------- RECONSTRUIR MQTT --------
 if(m3){
