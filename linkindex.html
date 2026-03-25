@@ -223,23 +223,27 @@ try{
 
   console.log("✅ PARAMS:", decoded);
 
+// -------- EXTRAER PARÁMETROS (AHORA SÍ) --------
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const ia  = decoded['ia'] || 0;
+
+
+
+
+
 }catch(e){
   console.error("❌ Error decodificando:", e);
 }
-
-// -------- EXTRAER PARÁMETROS (YA DECODIFICADO) --------
-window.k   = decoded['k'];
-window.a   = decoded['a'];
-window.ct  = decoded['ct'];
-window.fa  = decoded['fa'];
-window.fe  = decoded['fe'];
-window.he  = decoded['he'];
-window.fs  = decoded['fs'];
-window.hs  = decoded['hs'];
-window.cp  = decoded['cp']==='1';
-window.ca  = decoded['ca']==='1';
-window.l   = parseInt(decoded['l'])||0;
-window.ia  = decoded['ia'] || 0;
 
 // -------- AES DECRYPT --------
 async function aesDecrypt(cipherText, password) {
@@ -313,9 +317,9 @@ if(decoded['m123e'] && decoded['pl']){
 // }
 
 // -------- CONEXIÓN MQTT --------
-const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
-client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-client.on('error', err=>console.log("❌ Error MQTT:",err));
+//const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
+//client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
+//client.on('error', err=>console.log("❌ Error MQTT:",err));
 
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
