@@ -221,6 +221,63 @@ try{
   console.error("❌ Error decodificando link:",e);
 }
 
+
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
+<script>
+(async ()=>{
+  async function aesDecrypt(cipherText, password) {
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    const data = Uint8Array.from(atob(cipherText), c => c.charCodeAt(0));
+    const salt = data.slice(0, 16);
+    const iv = data.slice(16, 32);
+    const ctArray = data.slice(32);
+
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+    const key = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+      keyMaterial,
+      { name: "AES-CBC", length: 256 },
+      false,
+      ["decrypt"]
+    );
+
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-CBC", iv },
+      key,
+      ctArray
+    );
+    return dec.decode(decrypted);
+  }
+
+  // ---- DESENCRIPTAR Y DESCOMPRIMIR ----
+  if(decoded['m123e'] && decoded['pl']){
+    try {
+      const descifrado = await aesDecrypt(decoded['m123e'], decoded['pl']);
+      const descomprimido = LZString.decompressFromUTF16(descifrado);
+      const [m1, m2, m3] = descomprimido.split('|');
+
+      console.log("✅ m1:", m1, "m2:", m2, "m3:", m3);
+
+      // Reemplazar variables para MQTT
+      window.m1 = m1;
+      window.m2 = m2;
+      window.m3 = m3.startsWith('wss://') ? m3 : `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
+
+    } catch(e){
+      console.error("❌ Error al descifrar/descomprimir:", e);
+    }
+  } else {
+    console.warn("⚠️ No hay m123e o pl en los parámetros del link");
+  }
+})();
+</script>
+
+
+
 // -------- EXTRAER PARÁMETROS --------
 const k   = decoded['k'];
 const a   = decoded['a'];
