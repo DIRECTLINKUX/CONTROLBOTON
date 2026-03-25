@@ -257,20 +257,24 @@ async function aesDecrypt(ciphertext, password) {
     }
 }
 
-
-async function obtenerM1M2M3(mEncriptado, pw) {
+async function obtenerM1M2M3(m, pw) {
     try {
-        const decryptedWords = CryptoJS.AES.decrypt(mEncriptado, pw);
-        const decryptedUTF16 = decryptedWords.toString(CryptoJS.enc.Utf16);
-        const mOriginal = LZString.decompressFromUTF16(decryptedUTF16);
-        const [m1, m2, m3] = mOriginal.split('|');
+        if (!m || !pw) throw new Error("m o pw vacíos");
+        
+        const mDecodificado = decodeURIComponent(m);        // Paso 1: decodeURIComponent
+        const mDesencriptado = await aesDecrypt(mDecodificado, pw); // Paso 2: desencriptar
+        if (!mDesencriptado) throw new Error("Desencriptado falló");
+        
+        const mDescomprimido = LZString.decompressFromUTF16(mDesencriptado); // Paso 3: descomprimir
+        if (!mDescomprimido) throw new Error("Descompresión falló");
+        
+        const [m1, m2, m3] = mDescomprimido.split('|'); // Paso 4: separar
         return { m1, m2, m3 };
     } catch (e) {
-        console.error("❌ Error desencriptando AES:", e);
+        console.error("Error obteniendo m1 m2 m3:", e);
         return null;
     }
 }
-
 
 
 // -------- RECONSTRUIR MQTT DESDE M ENCRIPTADO --------
