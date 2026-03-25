@@ -195,36 +195,38 @@ Cerrar
   </div>
 </div>
 
-<script>
-
-// -------- DECODIFICAR PARÁMETRO d --------
-function base64urlDecode(str){
-  str = str.replace(/-/g,'+').replace(/_/g,'/');
-  while(str.length % 4) str += '=';
-  return atob(str);
-}
-
-const params = new URLSearchParams(window.location.search);
-let d = params.get('d') || '';
-let decoded = {};
-
-try{
-  const d_url = decodeURIComponent(d);
-  const base = base64urlDecode(d_url);
-  const paramStr = decodeURIComponent(base);
-  paramStr.split('&').forEach(p=>{
-    const [key,val] = p.split('=');
-    decoded[key] = val || '';
-  });
-  console.log("PARAMS DECODIFICADOS:",decoded);
-}catch(e){
-  console.error("❌ Error decodificando link:",e);
-}
-
-
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
 (async ()=>{
+
+<script>
+
+  // -------- DECODIFICAR PARÁMETRO d --------
+  function base64urlDecode(str){
+    str = str.replace(/-/g,'+').replace(/_/g,'/');
+    while(str.length % 4) str += '=';
+    return atob(str);
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  let d = params.get('d') || '';
+  let decoded = {};
+
+  try{
+    const d_url = decodeURIComponent(d);
+    const base = base64urlDecode(d_url);
+    const paramStr = decodeURIComponent(base);
+    paramStr.split('&').forEach(p=>{
+      const [key,val] = p.split('=');
+      decoded[key] = val || '';
+    });
+    console.log("PARAMS DECODIFICADOS:",decoded);
+  }catch(e){
+    console.error("❌ Error decodificando link:",e);
+  }
+
+  // -------- FUNCION AES DECRYPT --------
   async function aesDecrypt(cipherText, password) {
     const enc = new TextEncoder();
     const dec = new TextDecoder();
@@ -253,7 +255,7 @@ try{
     return dec.decode(decrypted);
   }
 
-  // ---- DESENCRIPTAR Y DESCOMPRIMIR ----
+  // ---- DESENCRIPTAR, DESCOMPRIMIR E INICIALIZAR MQTT ----
   if(decoded['m123e'] && decoded['pl']){
     try {
       const descifrado = await aesDecrypt(decoded['m123e'], decoded['pl']);
@@ -262,21 +264,31 @@ try{
 
       console.log("✅ m1:", m1, "m2:", m2, "m3:", m3);
 
-      // Reemplazar variables para MQTT
+      // Guardar variables globales
       window.m1 = m1;
       window.m2 = m2;
       window.m3 = m3.startsWith('wss://') ? m3 : `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
 
+      // ---- INICIALIZAR CLIENTE MQTT ----
+      const client = mqtt.connect(window.m3, {
+        username: window.m1,
+        password: window.m2,
+        connectTimeout: 5000
+      });
+      window.client = client;
+
+      client.on('connect', () => console.log("✅ Conectado a HiveMQ Cloud"));
+      client.on('error', err => console.error("❌ Error MQTT:", err));
+
     } catch(e){
-      console.error("❌ Error al descifrar/descomprimir:", e);
+      console.error("❌ Error al descifrar/descomprimir o inicializar MQTT:", e);
     }
   } else {
     console.warn("⚠️ No hay m123e o pl en los parámetros del link");
   }
+
 })();
 </script>
-
-
 
 // -------- EXTRAER PARÁMETROS --------
 const k   = decoded['k'];
