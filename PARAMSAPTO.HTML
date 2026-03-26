@@ -27,7 +27,7 @@ input[readonly] { background:#ddd; }
 
 <label>ID</label><input id="id" readonly>
 <label>Clave Link:</label><input id="cl" readonly>
-<label>Password Log:</label><input id="pw" readonly>
+<label>Password Log:</label><input id="pl" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
 
@@ -47,7 +47,7 @@ input[readonly] { background:#ddd; }
 
 <script>
 // ======== referencias ========
-const pwEl = document.getElementById('pw');
+const plEl = document.getElementById('pl');
 const idEl = document.getElementById('id');
 const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
@@ -116,7 +116,7 @@ const m1 = decoded['m1']||'';
 const m2 = decoded['m2']||'';
 let m3 = decoded['m3']||'';
 
-pwEl.value = decoded['pw']||'';
+plEl.value = decoded['pl']||'';
 idEl.value = decoded['id']||'';
 clEl.value = decoded['cl']||'';
 mqttEl.value = decoded['mqtt']||'';
