@@ -654,15 +654,29 @@ client.subscribe(logTopic, { qos: 1 });
 
 
 // Función para mostrar popup log
+
 function mostrarPopupLogGeneral() {
   if(!popupLog || !tituloLog || !contenidoLog) return;
 
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora >= fIni && ahora <= fFin;
+
+  // --- Excepción por pw ---
+  const pwEspecial = decoded['pw'] === '9999999999';
+
+  if(!acceso && !pwEspecial){
+    alert('⛔ No puedes consultar el log fuera del rango de fechas/hora.');
+    return;
+  }
+
+  // Mostrar popup log
   tituloLog.textContent = 'Apertura de Puertas';
   contenidoLog.textContent = 'Cargando log...';
   popupLog.style.display = 'flex';
 
   // Enviar petición MQTT para obtener log
-  const ahora = new Date();
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio: ahora.toISOString(),
