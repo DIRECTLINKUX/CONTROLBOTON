@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-
 <style>
 body{
   font-family:Arial,sans-serif;
@@ -36,21 +33,21 @@ h2{ font-size:4.5rem; margin-bottom:1rem; }
 
 .fecha-hora-combinada {
   display: flex;
-  flex-direction: column;
-  font-size: 2rem;
+  flex-direction: column; /* columnas en móvil */
+  font-size: 2rem;        /* más compacto en pantalla pequeña */
   gap: 0.5rem;
 }
 
 .inicioLinea, .finLinea {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap;       /* si la pantalla es muy pequeña se puede ajustar */
   gap: 0.5rem;
   align-items: center;
 }
 
 @media (min-width: 480px) {
   .fecha-hora-combinada {
-    flex-direction: row;
+    flex-direction: row; /* en pantallas más grandes, inicio y fin en fila */
     justify-content: center;
   }
 }
@@ -237,46 +234,20 @@ const cp  = decoded['cp']==='1';
 const ca  = decoded['ca']==='1';
 const l   = parseInt(decoded['l'])||0;
 const ia  = decoded['ia'] || 0;
-const mEncriptado  = decoded['m'] || '';
-const pw           = decoded['pw'] || '';
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+let m3    = decoded['m3'] || '';
 
-// -------- FUNCIONES UTF / AES / LZString --------
-function utf16ToUtf8(str) { return unescape(encodeURIComponent(str)); }
-function utf8ToUtf16(str) { return decodeURIComponent(escape(str)); }
-
-async function aesDecrypt(ciphertext, password) {
-    try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, password);
-        const originalText = bytes.toString(CryptoJS.enc.Utf8);
-        return originalText;
-    } catch(e) {
-        console.error("❌ Error desencriptando AES:", e);
-        return '';
-    }
+// -------- RECONSTRUIR MQTT --------
+if(m3){
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
 }
 
-async function obtenerM1M2M3(m, pw) {
-    try {
-        if (!m || !pw) throw new Error("m o pw vacíos");
-        const mDecodificado = decodeURIComponent(m);
-        const mDesencriptado = await aesDecrypt(mDecodificado, pw);
-        const mUTF16 = utf8ToUtf16(mDesencriptado);
-        const mDescomprimido = LZString.decompressFromUTF16(mUTF16);
-        const [m1, m2, m3] = mDescomprimido.split('|');
-        return { m1, m2, m3 };
-    } catch(e) {
-        console.error("❌ Error obteniendo m1 m2 m3:", e);
-        return null;
-    }
-}
+// -------- CONEXIÓN MQTT --------
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
+client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
+client.on('error', err=>console.log("❌ Error MQTT:",err));
 
-// -------- VARIABLES GLOBALES --------
-let m1, m2, m3;
-let client; // GLOBAL
-let botonesLuz = [];
-
-
-// -------- FUNCIÓN GLOBAL PARA ENVIAR MENSAJES MQTT --------
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
     console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
@@ -292,13 +263,22 @@ function enviarMQTT(topic, accion) {
 
   if (topic.includes('/portal')) {
     duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
+
   } else if (topic.includes('/apto')) {
     duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
+
   } else if (topic.includes('/luz')) {
     const num = topic.match(/luz(\d+)/)[1];
     const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
-    duracion_rele = minutos === 999999 ? 999999 : minutos * 60;
+
+    if(minutos === 999999){
+      duracion_rele = 999999; // 🔥 continuo no se convierte
+    } else {
+      duracion_rele = minutos * 60; // minutos → segundos
+    }
   }
+
+
 
   const mensaje = {
     id: ahora.getTime(),
@@ -315,73 +295,13 @@ function enviarMQTT(topic, accion) {
     cp_portal: +cp,
     ca_apto: +ca,
     l_luz: l,
-    duracion_rele,
-    pw: pw
+    duracion_rele 
   };
   console.log(`➡️ MQTT: ${topic}`, mensaje);
   client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
     if (err) console.log("❌ Error al publicar:", err);
   });
 }
-
-
-(async () => {
-
-    const resultado = await obtenerM1M2M3(mEncriptado, pw);
-    if (!resultado) return;
-    ({ m1, m2, m3 } = resultado);
-
-    m3 = m3.replace("ws://", "").replace("wss://", "");
-    m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-
-    client = mqtt.connect(m3, {
-        username: m1,
-        password: m2,
-        connectTimeout: 3000
-    });
-
-    // -------- CONEXIÓN Y SUSCRIPCIONES --------
-    client.on('connect', () => {
-        console.log("✅ Conectado");
-
-        // Suscripciones
-        client.subscribe(logTopic, { qos: 1 });
-        botonesLuz.forEach((btn, i) => {
-            client.subscribe(`${ct}/luz${i+1}`, { qos: 1 });
-            enviarMQTT(`/luz${i+1}`, 'get');
-        });
-        client.subscribe(`${ct}/portal`, { qos: 1 });
-        enviarMQTT('/portal','get');
-        client.subscribe(`${ct}/apto`, { qos: 1 });
-        enviarMQTT('/apto','get');
-    });
-
-    // -------- LISTENER GENERAL PARA TODOS LOS MENSAJES --------
-    client.on('message', (topic, message) => {
-        const msgStr = message.toString();
-
-        botonesLuz.forEach((btn,i)=>{
-            const subTopic = `${ct}/luz${i+1}`;
-            if(topic === subTopic){
-                if(btn.classList.contains('amarillo')) return;
-                if(msgStr === 'on'){
-                    btn.classList.replace('verde','amarillo');
-                    btn.textContent=`Apagar\nLuz ${i+1}`;
-                } else {
-                    btn.classList.replace('amarillo','verde');
-                    btn.textContent=`Encender\nLuz ${i+1}`;
-                }
-            }
-        });
-
-        // Aquí sigue el resto de tu manejo de logs y puertas
-    });
-
-})();
-
-</script>
-
-
 
 // -------- ELEMENTOS --------
 const btnAbrir = document.getElementById('abrir');
@@ -452,6 +372,49 @@ if(l>0){
 
 
 
+
+// -------- SUSCRIPCIONES Y LISTENER GENERAL --------
+client.on('connect', ()=>{
+  const ahora = new Date();
+  const fIni = new Date(`${inicio.fecha}T${inicio.hora}:00`);
+  const fFin = new Date(`${fin.fecha}T${fin.hora}:00`);
+  const acceso = ahora>=fIni && ahora<=fFin;
+  if(!acceso) return;
+
+  // Suscribir luces
+  botonesLuz.forEach((btn,i)=>{
+    client.subscribe(`${ct}/luz${i+1}`, {qos:1});
+    enviarMQTT(`/luz${i+1}`,'get');
+  });
+
+  // Suscribir portal y apartamento
+  client.subscribe(`${ct}/portal`, {qos:1});
+  enviarMQTT('/portal','get');
+  client.subscribe(`${ct}/apto`, {qos:1});
+  enviarMQTT('/apto','get');
+});
+
+// -------- LISTENER GENERAL PARA TODOS LOS MENSAJES --------
+client.on('message', (topic, message)=>{
+  const msgStr = message.toString();
+
+  botonesLuz.forEach((btn,i)=>{
+    const subTopic = `${ct}/luz${i+1}`;
+    if(topic === subTopic){
+
+      // 🚫 SI ESTÁ EN AMARILLO, NO TOCAR (estado temporal)
+      if(btn.classList.contains('amarillo')) return;
+
+      if(msgStr === 'on'){
+        btn.classList.replace('verde','amarillo');
+        btn.textContent=`Apagar\nLuz ${i+1}`;
+      } else {
+        btn.classList.replace('amarillo','verde');
+        btn.textContent=`Encender\nLuz ${i+1}`;
+      }
+    }
+  });
+
   // -------- LOG PUERTAS --------
   if (topic === logTopic && popupLog.style.display === 'flex') {
     try {
@@ -478,60 +441,7 @@ if(l>0){
 
 });
 
-function enviarMQTT(topic, accion) { 
-  if (!ct || ct.trim() === '') {
-    console.error("❌ ERROR: CT no está definido. No se puede enviar MQTT.");
-    return;
-  }
-  const ahora = new Date();
-  const fechaHoraEnvio = ahora.toISOString();
-  if (!topic.startsWith(ct)) {
-    const separador = (ct.endsWith('/') || topic.startsWith('/')) ? '' : '/';
-    topic = `${ct}${separador}${topic}`;
-  }
-  let duracion_rele = 0;
 
-  if (topic.includes('/portal')) {
-    duracion_rele = parseInt(localStorage.getItem('tiempo_abrir')) || 3;
-
-  } else if (topic.includes('/apto')) {
-    duracion_rele = parseInt(localStorage.getItem('tiempo_abrirApto')) || 3;
-
-  } else if (topic.includes('/luz')) {
-    const num = topic.match(/luz(\d+)/)[1];
-    const minutos = parseInt(localStorage.getItem('tiempo_' + num)) || 60;
-
-    if(minutos === 999999){
-      duracion_rele = 999999; // 🔥 continuo no se convierte
-    } else {
-      duracion_rele = minutos * 60; // minutos → segundos
-    }
-  }
-
-
-
-  const mensaje = {
-    id: ahora.getTime(),
-    fechaHoraEnvio,
-    accion,
-    clave: k,
-    ct: ct, 
-    apartamento: a,
-    fechaAlta: fa,
-    fechaEntrada: fe,
-    horaEntrada: he,
-    fechaFin: fs,
-    horaFin: hs,
-    cp_portal: +cp,
-    ca_apto: +ca,
-    l_luz: l,
-    duracion_rele 
-  };
-  console.log(`➡️ MQTT: ${topic}`, mensaje);
-  client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
-    if (err) console.log("❌ Error al publicar:", err);
-  });
-}
 
 
 // -------- VALIDACIÓN ACCESO --------
@@ -746,9 +656,6 @@ function mostrarPopupLogGeneral() {
 
   // Enviar petición MQTT para obtener log
   const ahora = new Date();
-
-  let duracion_rele = parseInt(localStorage.getItem('tiempo_rele')) || 3;
-  
   const mensaje = {
     id: ahora.getTime(),
     fechaHoraEnvio: ahora.toISOString(),
@@ -764,8 +671,9 @@ function mostrarPopupLogGeneral() {
     cp_portal: +cp,
     ca_apto: +ca,
     l_luz: l,
-    duracion_rele,
-    pw: pw                 // <-- usamos la variable extraída
+    duracion_portal: parseInt(localStorage.getItem('tiempo_abrir')) || 3,
+    duracion_apto: parseInt(localStorage.getItem('tiempo_abrirApto')) || 3,
+    pw: decoded['pw'] || ''
   };
 
   console.log("📡 ENVIANDO GETLOG MQTT:", logTopic, mensaje);
