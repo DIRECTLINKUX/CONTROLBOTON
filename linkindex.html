@@ -204,33 +204,27 @@ Cerrar
 
 
 
-// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
+// -------- OBTENER 'd' DE LA URL --------
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
-let decoded = {}; // <-- aseguramos que existe
+let decoded = {};
 
-try {
-  // intentamos descomprimir LZString
-  const json = LZString.decompressFromEncodedURIComponent(d);
-
-  if(!json){
-    throw new Error("No se pudo descomprimir LZString");
+if(d){
+  try {
+    // ---- Intentar descomprimir LZString ----
+    const json = LZString.decompressFromEncodedURIComponent(d);
+    if(json){
+      decoded = JSON.parse(json);
+    } else {
+      // ---- Si no es LZString, parsear como query string ----
+      d.split('&').forEach(p => {
+        const [key, val] = p.split('=');
+        decoded[key] = decodeURIComponent(val || '');
+      });
+    }
+  } catch(e){
+    console.error("❌ Error decodificando 'd':", e);
   }
-
-  // puede venir como query string, convertimos a objeto
-  if(json.includes('&')){
-    json.split('&').forEach(p => {
-      const [key, val] = p.split('=');
-      decoded[key] = decodeURIComponent(val || '');
-    });
-  } else {
-    decoded = JSON.parse(json);
-  }
-
-  console.log("✅ PARAMS DECODIFICADOS:", decoded);
-
-} catch(e) {
-  console.error("❌ Error decodificando LZString:", e);
 }
 
 // -------- EXTRAER PARÁMETROS --------
@@ -251,7 +245,7 @@ const m2 = (decoded['m2'] || '').trim();
 const us = (decoded['us'] || '').replace(/["']/g,'').trim();
 let m3  = (decoded['m3'] || '').trim();
 
-// -------- RECONSTRUIR MQTT --------
+// -------- RECONSTRUIR URL MQTT --------
 if(m3){
   m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
 } else {
@@ -259,6 +253,7 @@ if(m3){
 }
 
 // -------- DEBUG --------
+console.log("✅ PARAMS DECODIFICADOS:", decoded);
 console.log("🔎 k reconstruido:", k);
 console.log("🔎 us reconstruido:", us);
 console.log("🔎 m3 reconstruido:", m3);
