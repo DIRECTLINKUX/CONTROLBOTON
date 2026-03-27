@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 <style>
 body { font-family: Arial; display:flex; justify-content:center; align-items:flex-start; padding-top:20px; background:#eee; }
 #contenedor { background:white; padding:20px; border-radius:10px; width:400px; }
@@ -88,35 +89,52 @@ document.addEventListener('input', e=>{
   if(e.target.tagName==="INPUT" && !e.target.readOnly) guardarLocal();
 });
 
-// ======== decode ========
-function base64urlDecode(str){
-  str = str.replace(/-/g,'+').replace(/_/g,'/');
-  while(str.length % 4) str += '=';
-  return atob(str);
-}
+// ======== decode (LZString) ========
 const params = new URLSearchParams(window.location.search);
-
 let decoded = {};
+
 try{
   const dParam = params.get('d') || '';
-  if(dParam){
-    const base = base64urlDecode(decodeURIComponent(dParam));
-    decodeURIComponent(base).split('&').forEach(p=>{
-      const [k,v]=p.split('=');
-      decoded[k]=v||'';
-    });
+
+  if(!dParam) throw new Error("Parámetro d vacío");
+
+  const descomprimido = LZString.decompressFromEncodedURIComponent(dParam);
+
+  if(!descomprimido){
+    throw new Error("No se pudo descomprimir");
   }
-}catch(e){console.error("Error decodificando link:", e);}
+
+  descomprimido.split('&').forEach(p=>{
+    const [k,v]=p.split('=');
+    decoded[k] = decodeURIComponent(v || '');
+  });
+
+  console.log("✅ PARAMS DECODIFICADOS:", decoded);
+
+}catch(e){
+  console.error("❌ Error decodificando d:", e);
+}
 
 // ======== datos ========
-const k = decoded['k']||'';
-const a = decoded['a']||'';
-const ct = decoded['ct']||'';
-const m1 = decoded['m1']||'';
-const m2 = decoded['m2']||'';
-let m3 = decoded['m3']||'';
+const k  = (decoded['k']  || '').trim();
+const a  = (decoded['a']  || '').trim();
+const ct = (decoded['ct'] || '').trim();
+const fa = (decoded['fa'] || '').trim();
+const fe = (decoded['fe'] || '').trim();
+const he = (decoded['he'] || '').trim();
+const fs = (decoded['fs'] || '').trim();
+const hs = (decoded['hs'] || '').trim();
+const cp = (decoded['cp'] || '').trim();
+const ca = (decoded['ca'] || '').trim();
+const l  = parseInt(decoded['l']) || 0;
+const m1 = (decoded['m1'] || '').trim();
+const m2 = (decoded['m2'] || '').trim();
+const us = (decoded['us'] || '').replace(/["']/g,'').trim();
+let m3   = (decoded['m3'] || '').trim();
+
 
 plEl.value = decoded['pl']||'';
+
 idEl.value = decoded['id']||'';
 clEl.value = decoded['cl']||'';
 mqttEl.value = decoded['mqtt']||'';
@@ -129,7 +147,14 @@ if(a){
 cargarLocal();
 
 // ======== MQTT ========
-if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+if (m3) {
+  m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
+} else {
+  console.error("❌ m3 vacío");
+  estado.textContent = "❌ Error MQTT";
+}
+
+
 
 const client = mqtt.connect(m3,{
   username:m1,
