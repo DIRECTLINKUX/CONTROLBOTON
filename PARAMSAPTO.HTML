@@ -231,20 +231,16 @@ function validarHorario(){
     return;
   }
 
-  if(ahora >= inicio && ahora <= fin){
-
-    boton.disabled = false;
-    boton.classList.remove('gris');
-    mensajeHorario.textContent = "";
-
-  } else {
-
-    boton.disabled = true;
-    boton.classList.add('gris');
-
-    mensajeHorario.textContent =
-      `❌ Fuera de horario (${decoded['fe']} ${decoded['he']} → ${decoded['fs']} ${decoded['hs']})`;
-  }
+  //  if(ahora >= inicio && ahora <= fin){
+  //    boton.disabled = false;
+  //    boton.classList.remove('gris');
+  //    mensajeHorario.textContent = "";
+  //  } else {
+  //    boton.disabled = true;
+  //    boton.classList.add('gris');
+  //    mensajeHorario.textContent =
+  //      `❌ Fuera de horario (${decoded['fe']} ${decoded['he']} → ${decoded['fs']} ${decoded['hs']})`;
+  //  }
 }
 
 // ejecutar
