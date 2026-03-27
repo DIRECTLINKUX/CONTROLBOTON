@@ -213,10 +213,15 @@ try{
   }
 
   // 🔥 IMPORTANTE: convertir querystring a objeto
+ 
   json.split('&').forEach(p => {
     const [key, val] = p.split('=');
-    decoded[key] = val || '';
+    decoded[key] = decodeURIComponent(val || '');
   });
+
+
+
+
 
   console.log("✅ PARAMS DECODIFICADOS:", decoded);
 
