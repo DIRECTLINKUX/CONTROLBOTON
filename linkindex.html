@@ -200,7 +200,7 @@ Cerrar
 
 <script>
 
-// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
+// -------- DECODIFICAR PARÁMETRO d (LZSTRING + QUERYSTRING) --------
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
 let decoded = {};
@@ -212,13 +212,18 @@ try{
     throw new Error("No se pudo descomprimir");
   }
 
-  decoded = JSON.parse(json);
+  // 🔥 IMPORTANTE: convertir querystring a objeto
+  json.split('&').forEach(p => {
+    const [key, val] = p.split('=');
+    decoded[key] = val || '';
+  });
 
   console.log("✅ PARAMS DECODIFICADOS:", decoded);
 
 }catch(e){
   console.error("❌ Error decodificando LZString:", e);
 }
+
 
 // -------- EXTRAER PARÁMETROS --------
 const k   = decoded['k'];
@@ -235,13 +240,20 @@ const l   = parseInt(decoded['l'])||0;
 const ia  = decoded['ia'] || 0;
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
-let m3    = decoded['m3'] || '';
+
+// 🔥 FIX IMPORTANTE
+let m3 = (decoded['m3'] || '').trim();
+
 
 // -------- RECONSTRUIR MQTT --------
 if(m3){
-  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+  m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
+} else {
+  console.error("❌ m3 vacío, no se puede conectar MQTT");
 }
+
 console.log("🔎 m3 reconstruido:", m3);
+
 // -------- CONEXIÓN MQTT --------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
