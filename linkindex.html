@@ -255,8 +255,6 @@ console.log("Parametros decodificados:", parametros);
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
-</script>
-
 
 
 
@@ -641,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.mostrarPopupConfig = mostrarPopupConfig;
 
 });
-</script>
+
 
 
 <script>
@@ -744,7 +742,7 @@ titulos.forEach(titulo => {
 });
 
 </script>
-
+</script>
 
 </body>
 </html>
