@@ -200,26 +200,20 @@ Cerrar
 
 <script>
 
-// ------------------- DECODIFICAR d -------------------
+
+
+
+// ================== DECODIFICAR d ==================
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
-
-let decoded = {}; // objeto donde guardaremos los parámetros
+let decoded = {};
 
 try {
-    // Descomprimimos LZString
+    // Descomprimir LZString
     const descomprimido = LZString.decompressFromEncodedURIComponent(d);
+    if (!descomprimido) throw new Error("No se pudo descomprimir LZString");
 
-    const datos = JSON.parse(descomprimido);
-    console.log(datos);
-
-
-
-    if(!descomprimido){
-        throw new Error("No se pudo descomprimir LZString");
-    }
-
-    // Como tu d es query string (k=...&m1=...), lo parseamos manualmente
+    // Convertir query string en objeto
     descomprimido.split('&').forEach(p => {
         const [key, val] = p.split('=');
         decoded[key] = decodeURIComponent(val || '');
@@ -227,11 +221,11 @@ try {
 
     console.log("✅ PARAMS DECODIFICADOS:", decoded);
 
-} catch(e) {
+} catch (e) {
     console.error("❌ Error decodificando d:", e);
 }
 
-// ------------------- EXTRAER PARÁMETROS -------------------
+// ================== EXTRAER PARÁMETROS ==================
 const k  = (decoded['k']  || '').trim();
 const a  = (decoded['a']  || '').trim();
 const ct = (decoded['ct'] || '').trim();
@@ -249,19 +243,18 @@ const m2 = (decoded['m2'] || '').trim();
 const us = (decoded['us'] || '').replace(/["']/g,'').trim();
 let m3  = (decoded['m3'] || '').trim();
 
-// Reconstruir MQTT
-if(m3){
+// ================== RECONSTRUIR MQTT ==================
+if (m3) {
     m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
 } else {
     console.error("❌ m3 vacío, no se puede conectar MQTT");
 }
 
-// ------------------- DEBUG -------------------
+// ================== DEBUG ==================
 console.log("🔎 k:", k);
 console.log("🔎 us:", us);
 console.log("🔎 m3:", m3);
 console.log("🔎 resto de parámetros:", {a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2});
-
 
 // -------- CONEXIÓN MQTT --------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
