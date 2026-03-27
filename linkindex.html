@@ -234,8 +234,8 @@ const fe = (decoded['fe'] || '').trim();
 const he = (decoded['he'] || '').trim();
 const fs = (decoded['fs'] || '').trim();
 const hs = (decoded['hs'] || '').trim();
-const cp = decoded['cp'] === '1';
-const ca = decoded['ca'] === '1';
+const cp = (decoded['cp']  || '').trim();  // ahora "1" o "0"
+const ca = (decoded['ca']  || '').trim();
 const l  = parseInt(decoded['l']) || 0;
 const ia = (decoded['ia'] || '').trim();
 const m1 = (decoded['m1'] || '').trim();
