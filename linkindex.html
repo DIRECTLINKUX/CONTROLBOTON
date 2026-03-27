@@ -237,7 +237,6 @@ const hs = (decoded['hs'] || '').trim();
 const cp = (decoded['cp']  || '').trim();  // ahora "1" o "0"
 const ca = (decoded['ca']  || '').trim();
 const l  = parseInt(decoded['l']) || 0;
-const ia = (decoded['ia'] || '').trim();
 const m1 = (decoded['m1'] || '').trim();
 const m2 = (decoded['m2'] || '').trim();
 const us = (decoded['us'] || '').replace(/["']/g,'').trim();
@@ -707,7 +706,6 @@ function mostrarPopupLogGeneral() {
     cp_portal: +cp,
     ca_apto: +ca,
     l_luz: l,
-    duracion_rele,
     us: us
   };
 
