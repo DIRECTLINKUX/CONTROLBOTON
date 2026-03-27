@@ -33,7 +33,7 @@ input[readonly] { background:#ddd; }
 
 
 <h3>Configuración</h3>
-<label>ID</label><input id="ia_apto">
+<label>ID</label><input id="id_apto">
 <label>CLAVE LINK</label><input id="clave_secreta">
 <label>USUARIO</label><input id="usuario">
 <label>NOMBRE WIFI</label><input id="wifi_nombre">
@@ -54,7 +54,7 @@ const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
 const mensajeHorario = document.getElementById('mensajeHorario');
 
-const ia_apto = document.getElementById('ia_apto');
+const id_apto = document.getElementById('id_apto');
 const clave_secreta = document.getElementById('clave_secreta');
 const usuario = document.getElementById('usuario');
 const wifi_nombre = document.getElementById('wifi_nombre');
@@ -68,7 +68,7 @@ const estado = document.getElementById('estadoConexion');
 const STORAGE_KEY = "config_mqtt_usuario";
 function guardarLocal(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    ia_apto: ia_apto.value,
+    id_apto: id_apto.value,
     clave_secreta: clave_secreta.value,
     usuario: usuario.value,
     wifi_nombre: wifi_nombre.value,
@@ -78,7 +78,7 @@ function guardarLocal(){
 }
 function cargarLocal(){
   const d = JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
-  ia_apto.value = d.ia_apto || "";
+  id_apto.value = d.id_apto || "";
   clave_secreta.value = d.clave_secreta || "";
   usuario.value = d.usuario || "";
   wifi_nombre.value = d.wifi_nombre || "";
@@ -300,7 +300,7 @@ function enviarMQTT(){
     // ----- DATOS DEL USUARIO -----
     z_usuario: usuario.value,
     z_clave_secreta: clave_secreta.value,
-    z_ia_apto: ia_apto.value,
+    z_id_apto: id_apto.value,
     z_mqtt_datos: mqtt_datos.value,
     z_wifi_nombre: wifi_nombre.value,
     z_wifi_password: wifi_pass.value
