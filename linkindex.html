@@ -240,25 +240,25 @@ Cerrar
 </div>
 
 
+
+
+
 <script>
 // -------- OBTENER PARÁMETROS --------
 const parametros = obtenerParametros();
-
 // Desestructuramos para usar como antes
 const { k, a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2, m3, decoded } = parametros;
-
 console.log("Parametros decodificados:", parametros);
 
 // Ahora ya puedes usar k, m1, m2, m3, ct, a, etc.
+// -------- CONEXIÓN MQTT -aaaaa-------
+const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
+client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
+client.on('error', err=>console.log("❌ Error MQTT:",err));
 </script>
 
 
 
-
-// -------- CONEXIÓN MQTT --------
-const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
-client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
-client.on('error', err=>console.log("❌ Error MQTT:",err));
 
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
