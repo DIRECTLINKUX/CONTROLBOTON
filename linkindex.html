@@ -203,24 +203,17 @@ Cerrar
 
 
 
-
-// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
-const params = new URLSearchParams(window.location.search);
-let d = params.get('d') || '';
-let decoded = {};
-
-try {
-  const json = LZString.decompressFromEncodedURIComponent(d);
-  if(!json) throw new Error("No se pudo descomprimir");
-  decoded = JSON.parse(json);
-  console.log("✅ PARAMS DECODIFICADOS:", decoded);
-} catch(e) {
-  console.error("❌ Error decodificando LZString:", e);
+// -------- EXTRAER PARÁMETROS CORRECTAMENTE --------
+if (typeof decoded === 'string') {
+  const temp = {};
+  decoded.split('&').forEach(p => {
+    const [key, val] = p.split('=');
+    temp[key] = decodeURIComponent(val || '');
+  });
+  decoded = temp;
 }
 
-
-
-// -------- EXTRAER Y LIMPIAR PARÁMETROS --------
+// -------- AHORA EXTRAER --------
 const k  = (decoded['k']  || '').trim();
 const a  = (decoded['a']  || '').trim();
 const ct = (decoded['ct'] || '').trim();
@@ -235,7 +228,7 @@ const l  = parseInt(decoded['l']) || 0;
 const ia = (decoded['ia'] || '').trim();
 const m1 = (decoded['m1'] || '').trim();
 const m2 = (decoded['m2'] || '').trim();
-const us = (decoded['us'] || '').replace(/["']/g,'').trim(); // eliminar comillas dobles o simples
+const us = (decoded['us'] || '').replace(/["']/g,'').trim();
 let m3  = (decoded['m3'] || '').trim();
 
 // -------- RECONSTRUIR MQTT --------
@@ -250,7 +243,6 @@ console.log("🔎 k reconstruido:", k);
 console.log("🔎 us reconstruido:", us);
 console.log("🔎 m3 reconstruido:", m3);
 console.log("🔎 resto de parámetros:", {a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2});
-
 
 
 // -------- CONEXIÓN MQTT --------
