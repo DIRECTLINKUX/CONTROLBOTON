@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<script src="https://unpkg.com/lz-string/libs/lz-string.min.js"></script>
+
 <style>
 body{
   font-family:Arial,sans-serif;
@@ -98,50 +101,6 @@ button{
 .amarillo{ background:#f2c200 !important; color:black; }
 .gris{ background:#999 !important; color:#555 !important; cursor:not-allowed; }
 </style>
-
-
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-
-<script>
-// -------- FUNCIÓN PARA DECODIFICAR PARÁMETRO 'd' --------
-function obtenerParametros() {
-  const params = new URLSearchParams(window.location.search);
-  const dComprimido = params.get('d') || '';
-  let decoded = {};
-
-  try {
-    if(dComprimido){
-      const descomprimido = LZString.decompressFromEncodedURIComponent(dComprimido);
-      decoded = JSON.parse(descomprimido);
-    }
-  } catch(e){
-    console.error("❌ Error descomprimiendo link:", e);
-  }
-
-  const k   = decoded['k'];
-  const a   = decoded['a'];
-  const ct  = decoded['ct'];
-  const fa  = decoded['fa'];
-  const fe  = decoded['fe'];
-  const he  = decoded['he'];
-  const fs  = decoded['fs'];
-  const hs  = decoded['hs'];
-  const cp  = decoded['cp']===1 || decoded['cp']===true || decoded['cp']==='1';
-  const ca  = decoded['ca']===1 || decoded['ca']===true || decoded['ca']==='1';
-  const l   = parseInt(decoded['l'])||0;
-  const ia  = decoded['ia'] || 0;
-  const m1  = decoded['m1'];
-  const m2  = decoded['m2'];
-  let m3    = decoded['m3'] || '';
-
-  if(m3) m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-
-  return { k, a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2, m3, decoded };
-}
-</script>
-
-
 </head>
 
 <body>
@@ -239,24 +198,54 @@ Cerrar
   </div>
 </div>
 
-
-
-
-
 <script>
-// -------- OBTENER PARÁMETROS --------
-const parametros = obtenerParametros();
-// Desestructuramos para usar como antes
-const { k, a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2, m3, decoded } = parametros;
-console.log("Parametros decodificados:", parametros);
 
-// Ahora ya puedes usar k, m1, m2, m3, ct, a, etc.
-// -------- CONEXIÓN MQTT -aaaaa-------
+// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
+const params = new URLSearchParams(window.location.search);
+let d = params.get('d') || '';
+let decoded = {};
+
+try{
+  const json = LZString.decompressFromEncodedURIComponent(d);
+
+  if(!json){
+    throw new Error("No se pudo descomprimir");
+  }
+
+  decoded = JSON.parse(json);
+
+  console.log("✅ PARAMS DECODIFICADOS:", decoded);
+
+}catch(e){
+  console.error("❌ Error decodificando LZString:", e);
+}
+
+// -------- EXTRAER PARÁMETROS --------
+const k   = decoded['k'];
+const a   = decoded['a'];
+const ct  = decoded['ct'];
+const fa  = decoded['fa'];
+const fe  = decoded['fe'];
+const he  = decoded['he'];
+const fs  = decoded['fs'];
+const hs  = decoded['hs'];
+const cp  = decoded['cp']==='1';
+const ca  = decoded['ca']==='1';
+const l   = parseInt(decoded['l'])||0;
+const ia  = decoded['ia'] || 0;
+const m1  = decoded['m1'];
+const m2  = decoded['m2'];
+let m3    = decoded['m3'] || '';
+
+// -------- RECONSTRUIR MQTT --------
+if(m3){
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+}
+
+// -------- CONEXIÓN MQTT --------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
 client.on('connect', ()=>console.log("✅ Conectado a HiveMQ Cloud"));
 client.on('error', err=>console.log("❌ Error MQTT:",err));
-
-
 
 function enviarMQTT(topic, accion) { 
   if (!ct || ct.trim() === '') {
@@ -639,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.mostrarPopupConfig = mostrarPopupConfig;
 
 });
-
+</script>
 
 
 <script>
@@ -742,7 +731,7 @@ titulos.forEach(titulo => {
 });
 
 </script>
-</script>
+
 
 </body>
 </html>
