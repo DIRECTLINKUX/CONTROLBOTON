@@ -203,17 +203,37 @@ Cerrar
 
 
 
-// -------- EXTRAER PARÁMETROS CORRECTAMENTE --------
-if (typeof decoded === 'string') {
-  const temp = {};
-  decoded.split('&').forEach(p => {
-    const [key, val] = p.split('=');
-    temp[key] = decodeURIComponent(val || '');
-  });
-  decoded = temp;
+
+// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
+const params = new URLSearchParams(window.location.search);
+let d = params.get('d') || '';
+let decoded = {}; // <-- aseguramos que existe
+
+try {
+  // intentamos descomprimir LZString
+  const json = LZString.decompressFromEncodedURIComponent(d);
+
+  if(!json){
+    throw new Error("No se pudo descomprimir LZString");
+  }
+
+  // puede venir como query string, convertimos a objeto
+  if(json.includes('&')){
+    json.split('&').forEach(p => {
+      const [key, val] = p.split('=');
+      decoded[key] = decodeURIComponent(val || '');
+    });
+  } else {
+    decoded = JSON.parse(json);
+  }
+
+  console.log("✅ PARAMS DECODIFICADOS:", decoded);
+
+} catch(e) {
+  console.error("❌ Error decodificando LZString:", e);
 }
 
-// -------- AHORA EXTRAER --------
+// -------- EXTRAER PARÁMETROS --------
 const k  = (decoded['k']  || '').trim();
 const a  = (decoded['a']  || '').trim();
 const ct = (decoded['ct'] || '').trim();
@@ -243,6 +263,7 @@ console.log("🔎 k reconstruido:", k);
 console.log("🔎 us reconstruido:", us);
 console.log("🔎 m3 reconstruido:", m3);
 console.log("🔎 resto de parámetros:", {a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2});
+
 
 
 // -------- CONEXIÓN MQTT --------
