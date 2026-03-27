@@ -245,9 +245,13 @@ const l   = parseInt(decoded['l'])||0;
 const ia  = decoded['ia'] || 0;
 const m1  = decoded['m1'];
 const m2  = decoded['m2'];
+const us  = decoded['us'];
 
 // 🔥 FIX IMPORTANTE
 let m3 = (decoded['m3'] || '').trim();
+console.log("🔎 m3 reconstruido:", m3);
+console.log("🔎 K reconstruido:", K);
+console.log("🔎 us reconstruido:", us);
 
 
 // -------- RECONSTRUIR MQTT --------
@@ -680,7 +684,8 @@ function mostrarPopupLogGeneral() {
   const acceso = ahora >= fIni && ahora <= fFin;
 
   // --- Excepción por us ---
-  const usEspecial = decoded['us'] === '9999999999';
+ 
+  const usEspecial = us === '9999999999';
 
   if(!acceso && !usEspecial){
     alert('⛔ No puedes consultar el log fuera del rango de fechas/hora.');
@@ -710,7 +715,7 @@ function mostrarPopupLogGeneral() {
     l_luz: l,
     duracion_portal: parseInt(localStorage.getItem('tiempo_abrir')) || 3,
     duracion_apto: parseInt(localStorage.getItem('tiempo_abrirApto')) || 3,
-    us: decoded['us'] || ''
+    us: us
   };
 
   console.log("📡 ENVIANDO GETLOG MQTT:", logTopic, mensaje);
