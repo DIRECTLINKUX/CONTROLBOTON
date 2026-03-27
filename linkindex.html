@@ -200,58 +200,50 @@ Cerrar
 
 <script>
 
-// -------- DECODIFICAR PARÁMETRO d (LZSTRING + QUERYSTRING) --------
+
+
+
+
+// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
 let decoded = {};
 
-try{
+try {
   const json = LZString.decompressFromEncodedURIComponent(d);
-
-  if(!json){
-    throw new Error("No se pudo descomprimir");
-  }
-
-  // 🔥 IMPORTANTE: convertir querystring a objeto
- 
-  json.split('&').forEach(p => {
-    const [key, val] = p.split('=');
-    decoded[key] = decodeURIComponent(val || '');
-  });
-
-
-
-
-
+  if(!json) throw new Error("No se pudo descomprimir");
+  decoded = JSON.parse(json);
   console.log("✅ PARAMS DECODIFICADOS:", decoded);
-
-}catch(e){
+} catch(e) {
   console.error("❌ Error decodificando LZString:", e);
 }
 
-
 // -------- EXTRAER PARÁMETROS --------
-const k   = decoded['k'];
-const a   = decoded['a'];
-const ct  = decoded['ct'];
-const fa  = decoded['fa'];
-const fe  = decoded['fe'];
-const he  = decoded['he'];
-const fs  = decoded['fs'];
-const hs  = decoded['hs'];
-const cp  = decoded['cp']==='1';
-const ca  = decoded['ca']==='1';
-const l   = parseInt(decoded['l'])||0;
-const ia  = decoded['ia'] || 0;
-const m1  = decoded['m1'];
-const m2  = decoded['m2'];
-const us  = decoded['us'];
+const k  = decoded['k'] || ''; // <--- ahora sí definido
+const a  = decoded['a'] || '';
+const ct = decoded['ct'] || '';
+const fa = decoded['fa'] || '';
+const fe = decoded['fe'] || '';
+const he = decoded['he'] || '';
+const fs = decoded['fs'] || '';
+const hs = decoded['hs'] || '';
+const cp = decoded['cp'] === '1';
+const ca = decoded['ca'] === '1';
+const l  = parseInt(decoded['l']) || 0;
+const ia = decoded['ia'] || 0;
+const m1 = decoded['m1'] || '';
+const m2 = decoded['m2'] || '';
+const us = (decoded['us'] || '').replace(/["]/g, ''); // <--- limpiar caracteres sobrantes
+let m3  = decoded['m3'] || '';
 
-// 🔥 FIX IMPORTANTE
-let m3 = (decoded['m3'] || '').trim();
-console.log("🔎 m3 reconstruido:", m3);
+// -------- RECONSTRUIR MQTT --------
+if(m3){
+  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
+}
+
 console.log("🔎 k reconstruido:", k);
 console.log("🔎 us reconstruido:", us);
+console.log("🔎 m3 reconstruido:", m3);
 
 
 // -------- RECONSTRUIR MQTT --------
