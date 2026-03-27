@@ -27,14 +27,14 @@ input[readonly] { background:#ddd; }
 
 <label>ID</label><input id="id" readonly>
 <label>Clave Link:</label><input id="cl" readonly>
-<label>Password Log:</label><input id="pl" readonly>
+<label>Usuario:</label><input id="us" readonly>
 <label>MQTT</label><input id="mqtt" readonly>
 
 
 <h3>Configuración</h3>
 <label>ID</label><input id="ia_apto">
 <label>CLAVE LINK</label><input id="clave_secreta">
-<label>PASSWORD LOG</label><input id="clave_secreta_log">
+<label>USUARIO</label><input id="usuario">
 <label>NOMBRE WIFI</label><input id="wifi_nombre">
 <label>PASSWORD WIFI</label><input id="wifi_pass">
 <label>MQTT</label><input id="mqtt_datos">
@@ -55,7 +55,7 @@ const mensajeHorario = document.getElementById('mensajeHorario');
 
 const ia_apto = document.getElementById('ia_apto');
 const clave_secreta = document.getElementById('clave_secreta');
-const clave_secreta_log = document.getElementById('clave_secreta_log');
+const usuario = document.getElementById('usuario');
 const wifi_nombre = document.getElementById('wifi_nombre');
 const wifi_pass = document.getElementById('wifi_pass');
 const mqtt_datos = document.getElementById('mqtt_datos');
@@ -69,7 +69,7 @@ function guardarLocal(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     ia_apto: ia_apto.value,
     clave_secreta: clave_secreta.value,
-    clave_secreta_log: clave_secreta_log.value,
+    usuario: usuario.value,
     wifi_nombre: wifi_nombre.value,
     wifi_pass: wifi_pass.value,
     mqtt_datos: mqtt_datos.value
@@ -79,7 +79,7 @@ function cargarLocal(){
   const d = JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
   ia_apto.value = d.ia_apto || "";
   clave_secreta.value = d.clave_secreta || "";
-  clave_secreta_log.value = d.clave_secreta_log || "";
+  usuario.value = d.usuario || "";
   wifi_nombre.value = d.wifi_nombre || "";
   wifi_pass.value = d.wifi_pass || "";
   mqtt_datos.value = d.mqtt_datos || "";
@@ -273,8 +273,8 @@ function enviarMQTT(){
     l_luz: decoded['l']||'',
     duracion_rele: decoded['duracion_rele']||'',
     // ----- DATOS DEL USUARIO -----
+    z_usuario: usuario.value,
     z_clave_secreta: clave_secreta.value,
-    z_clave_secreta_log: clave_secreta_log.value,
     z_ia_apto: ia_apto.value,
     z_mqtt_datos: mqtt_datos.value,
     z_wifi_nombre: wifi_nombre.value,
