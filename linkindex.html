@@ -218,33 +218,25 @@ try {
   console.error("❌ Error decodificando LZString:", e);
 }
 
-// -------- EXTRAER PARÁMETROS --------
-const k  = decoded['k'] || ''; // <--- ahora sí definido
-const a  = decoded['a'] || '';
-const ct = decoded['ct'] || '';
-const fa = decoded['fa'] || '';
-const fe = decoded['fe'] || '';
-const he = decoded['he'] || '';
-const fs = decoded['fs'] || '';
-const hs = decoded['hs'] || '';
+
+
+// -------- EXTRAER Y LIMPIAR PARÁMETROS --------
+const k  = (decoded['k']  || '').trim();
+const a  = (decoded['a']  || '').trim();
+const ct = (decoded['ct'] || '').trim();
+const fa = (decoded['fa'] || '').trim();
+const fe = (decoded['fe'] || '').trim();
+const he = (decoded['he'] || '').trim();
+const fs = (decoded['fs'] || '').trim();
+const hs = (decoded['hs'] || '').trim();
 const cp = decoded['cp'] === '1';
 const ca = decoded['ca'] === '1';
 const l  = parseInt(decoded['l']) || 0;
-const ia = decoded['ia'] || 0;
-const m1 = decoded['m1'] || '';
-const m2 = decoded['m2'] || '';
-const us = (decoded['us'] || '').replace(/["]/g, ''); // <--- limpiar caracteres sobrantes
-let m3  = decoded['m3'] || '';
-
-// -------- RECONSTRUIR MQTT --------
-if(m3){
-  m3 = "wss://" + m3 + ".s1.eu.hivemq.cloud:8884/mqtt";
-}
-
-console.log("🔎 k reconstruido:", k);
-console.log("🔎 us reconstruido:", us);
-console.log("🔎 m3 reconstruido:", m3);
-
+const ia = (decoded['ia'] || '').trim();
+const m1 = (decoded['m1'] || '').trim();
+const m2 = (decoded['m2'] || '').trim();
+const us = (decoded['us'] || '').replace(/["']/g,'').trim(); // eliminar comillas dobles o simples
+let m3  = (decoded['m3'] || '').trim();
 
 // -------- RECONSTRUIR MQTT --------
 if(m3){
@@ -253,7 +245,13 @@ if(m3){
   console.error("❌ m3 vacío, no se puede conectar MQTT");
 }
 
+// -------- DEBUG --------
+console.log("🔎 k reconstruido:", k);
+console.log("🔎 us reconstruido:", us);
 console.log("🔎 m3 reconstruido:", m3);
+console.log("🔎 resto de parámetros:", {a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2});
+
+
 
 // -------- CONEXIÓN MQTT --------
 const client = mqtt.connect(m3,{username: m1,password: m2,connectTimeout: 3000});
