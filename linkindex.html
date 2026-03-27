@@ -308,7 +308,8 @@ function enviarMQTT(topic, accion) {
     cp_portal: +cp,
     ca_apto: +ca,
     l_luz: l,
-    duracion_rele 
+    duracion_rele,
+    us: us
   };
   console.log(`➡️ MQTT: ${topic}`, mensaje);
   client.publish(topic, JSON.stringify(mensaje), { qos: 1 }, err => {
