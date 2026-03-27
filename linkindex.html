@@ -200,39 +200,33 @@ Cerrar
 
 <script>
 
-
-
-
-// -------- DECODIFICAR PARÁMETRO d (LZSTRING + JSON) --------
+// ------------------- DECODIFICAR d -------------------
 const params = new URLSearchParams(window.location.search);
 let d = params.get('d') || '';
-let decoded = {}; // <-- aseguramos que existe
+
+let decoded = {}; // objeto donde guardaremos los parámetros
 
 try {
-  // intentamos descomprimir LZString
-  const json = LZString.decompressFromEncodedURIComponent(d);
+    // Descomprimimos LZString
+    const descomprimido = LZString.decompressFromEncodedURIComponent(d);
 
-  if(!json){
-    throw new Error("No se pudo descomprimir LZString");
-  }
+    if(!descomprimido){
+        throw new Error("No se pudo descomprimir LZString");
+    }
 
-  // puede venir como query string, convertimos a objeto
-  if(json.includes('&')){
-    json.split('&').forEach(p => {
-      const [key, val] = p.split('=');
-      decoded[key] = decodeURIComponent(val || '');
+    // Como tu d es query string (k=...&m1=...), lo parseamos manualmente
+    descomprimido.split('&').forEach(p => {
+        const [key, val] = p.split('=');
+        decoded[key] = decodeURIComponent(val || '');
     });
-  } else {
-    decoded = JSON.parse(json);
-  }
 
-  console.log("✅ PARAMS DECODIFICADOS:", decoded);
+    console.log("✅ PARAMS DECODIFICADOS:", decoded);
 
 } catch(e) {
-  console.error("❌ Error decodificando LZString:", e);
+    console.error("❌ Error decodificando d:", e);
 }
 
-// -------- EXTRAER PARÁMETROS --------
+// ------------------- EXTRAER PARÁMETROS -------------------
 const k  = (decoded['k']  || '').trim();
 const a  = (decoded['a']  || '').trim();
 const ct = (decoded['ct'] || '').trim();
@@ -250,20 +244,18 @@ const m2 = (decoded['m2'] || '').trim();
 const us = (decoded['us'] || '').replace(/["']/g,'').trim();
 let m3  = (decoded['m3'] || '').trim();
 
-// -------- RECONSTRUIR MQTT --------
+// Reconstruir MQTT
 if(m3){
-  m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
+    m3 = `wss://${m3}.s1.eu.hivemq.cloud:8884/mqtt`;
 } else {
-  console.error("❌ m3 vacío, no se puede conectar MQTT");
+    console.error("❌ m3 vacío, no se puede conectar MQTT");
 }
 
-// -------- DEBUG --------
-console.log("🔎 k reconstruido:", k);
-console.log("🔎 us reconstruido:", us);
-console.log("🔎 m3 reconstruido:", m3);
+// ------------------- DEBUG -------------------
+console.log("🔎 k:", k);
+console.log("🔎 us:", us);
+console.log("🔎 m3:", m3);
 console.log("🔎 resto de parámetros:", {a, ct, fa, fe, he, fs, hs, cp, ca, l, ia, m1, m2});
-
-
 
 
 // -------- CONEXIÓN MQTT --------
