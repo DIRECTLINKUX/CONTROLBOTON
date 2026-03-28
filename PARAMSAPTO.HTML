@@ -48,7 +48,7 @@ input[readonly] { background:#ddd; }
 
 <script>
 // ======== referencias ========
-const plEl = document.getElementById('pl');
+const usEl = document.getElementById('us');
 const idEl = document.getElementById('id');
 const clEl = document.getElementById('cl');
 const mqttEl = document.getElementById('mqtt');
@@ -135,6 +135,7 @@ let m3   = (decoded['m3'] || '').trim();
 
 idEl.value = decoded['id']||'';
 clEl.value = decoded['cl']||'';
+usEl.value = decoded['us']||'';
 mqttEl.value = decoded['mqtt']||'';
 
 if(a){
@@ -243,11 +244,7 @@ function validarHorario(){
   const inicio = crearFechaHora(decoded['fe'], decoded['he']);
   const fin = crearFechaHora(decoded['fs'], decoded['hs'] || "2359");
 
-  console.log("AHORA:", ahora);
-  console.log("INICIO:", inicio);
-  console.log("FIN:", fin);
-
-  if(!inicio || !fin){
+   if(!inicio || !fin){
     boton.disabled = true;
     boton.classList.add('gris');
     mensajeHorario.textContent = "❌ Error en fechas del link";
